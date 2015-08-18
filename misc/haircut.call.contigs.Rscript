@@ -1,9 +1,6 @@
-#! /Library/Frameworks/R.framework/Versions/3.1/Resources/bin/Rscript
-##! /apps/R/3.2.0/lib64/R/bin/Rscript
-###############################################################################
 cat("#######################################################
 # haircut.call.contig
-# version 150816	
+# This is version 150816.	
 #######################################################")
 args <- commandArgs()
 if(!any(args=='--args'))
@@ -53,16 +50,16 @@ if(length(args))
 }
 if( is.na(mfile) || is.na(indir.st) || is.na(indir.al) || is.na(outdir))
 {
-	stop('Usage:
-haircut.call.contig -indir.st=INDIRST -indir.al=INDIRAL -mfile=MFILE -outdir=OUTDIR [-trainfile=TRAINFILE -batch.n=BATCHN -batch.id=BATCHID]
+	stop('\nUsage:
+Rscript haircut.call.contig -indir.st=INDIRST -indir.al=INDIRAL -outdir=OUTDIR [-mfile=MFILE -trainfile=TRAINFILE -batch.n=BATCHN -batch.id=BATCHID]
 where
-INDIRST\t
-INDIRAL\t
-MFILE\t
-OUTDIR\t
-TRAINFILE\t
-BATCHN\t
-BATCHID
+INDIRST\tdirectory of pre-computed cut statistics of all contigs
+INDIRAL\tdirectory of contigs in fasta format, aligned to references
+OUTDIR\toutput directory
+MFILE\tOptional: model file, R objects therein are used to calculate the call probability from the cut statistics on 10bp chunks. If not specified, the default file supplied with the R package is used. 
+TRAINFILE\tOptional: model file, containing manually curated contigs
+BATCHN\tOptional: Number of PANGEA_IDs to process in parallel 
+BATCHID\tOptional: Batch ID of PANGEA_IDs that are processed in parallel
 ')
 }
 if(verbose)
@@ -86,7 +83,7 @@ if(DEBUG)
 ###############################################################################
 #	run script
 require(PANGEAhaircut)
-tmp						<- haircut.get.fitted.model.150816a(NULL, mfile)
+tmp						<- haircut.get.fitted.model.150816a()
 ctrmc					<- tmp$coef		
 predict.fun				<- tmp$predict
 #	get contigs that were used for training
