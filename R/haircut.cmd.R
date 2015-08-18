@@ -67,6 +67,16 @@ cmd.haircut.call<- function(indir.st, indir.al, outdir, mfile=NA, trainfile=NA, 
 ##--------------------------------------------------------------------------------------------------------
 ##	command line generator to run 'haircut.cutstat.contigs.Rscript' and 'haircut.call.contigs.Rscript' one after each other
 ##--------------------------------------------------------------------------------------------------------
+#' @title Command line generator to run the Haircut pipeline
+#' @description The haircut pipeline involves two steps. 
+#' First, descriptive statistics are calculated for each contig and the consensus sequence of that associated references.
+#' Second, these descriptive statistics are used to calculate a call probability for 10 base pair long contig chunks.
+#' The call probability is modeled as a function of the descriptive statistics. 
+#' The underlying statistical model is pre-computed and supplied with the R package.
+#' Based on the call probabilites, 10bp chunks of each contig are called (yes=1, no=0). 
+#' If cut/raw contigs correspond to each other, only one of both is returned.
+#' 	 
+#' @example example/ex.cmd.haircut.pipeline.R
 #' @export
 cmd.haircut.pipeline<- function(indir, outdir, batch.n=NA, batch.id=NA)
 {

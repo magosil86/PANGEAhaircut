@@ -402,12 +402,12 @@ prog.haircut.150806<- function()
 	{
 		#	get model coefficients across the chunks
 		mfile					<- paste(DATA,'model_150816a.R',sep='/')		
-		tmp						<- haircut.get.fitted.model.150816a(NULL, mfile)
+		tmp						<- haircut.get.fitted.model.150816a(NA, mfile)
 		ctrmc					<- tmp$coef		
 		predict.fun				<- tmp$predict
 		#	get contigs that were used for training
 		outfile	<- paste(DATA,'contigs_150408_trainingset_subsets.R',sep='/')
-		ctrain	<- haircut.get.training.contigs(NULL, outfile, NULL)
+		ctrain	<- haircut.get.training.contigs(NA, outfile, NA)
 		set(ctrain, NULL, 'CUT', ctrain[, factor(CUT, levels=c('cut','raw'), labels=c('Y','N'))])
 		setnames(ctrain, 'CUT', 'BLASTnCUT')		
 		#	get covariates for all contigs
