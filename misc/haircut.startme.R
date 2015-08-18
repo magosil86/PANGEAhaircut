@@ -105,14 +105,14 @@ my.dumpframes<- function()
 }
 ###############################################################################
 #	re-load all R files
-require(PANGEAHIVhaircut)
+require(PANGEAhaircut)
 print(CODE.HOME)
 function.list<-c(list.files(path= paste(CODE.HOME,"R",sep='/'), pattern = ".R$", all.files = FALSE,
 				full.names = TRUE, recursive = FALSE))
 sapply(function.list,function(x){ source(x,echo=FALSE,print.eval=FALSE, verbose=FALSE) })
 ###############################################################################
 #	run script
-#stop()
+stop()
 if(DEBUG)	options(error= my.dumpframes)	
 cat(paste("\nPANGEAhaircut: ",ifelse(DEBUG,"debug",""),"call",default.fun,"\n"))
 do.call(default.fun,list()) 	

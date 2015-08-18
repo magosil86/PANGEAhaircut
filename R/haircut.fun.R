@@ -4,7 +4,9 @@
 ##--------------------------------------------------------------------------------------------------------
 ##	wrapper to call 'haircutwrap.get.call.for.PNG_ID'
 ##--------------------------------------------------------------------------------------------------------
+#' @title Call 10bp chunks of cut/raw contigs with the same PANGEA_ID 
 #' @export
+#' @example example/ex.get.call.for.PNG_ID.R
 haircutwrap.get.call.for.PNG_ID<- function(indir.st,indir.al,outdir,ctrmc,predict.fun,par,ctrain=NULL,batch.n=NA,batch.id=NA)
 {
 	infiles	<- data.table(INFILE=list.files(indir.st, pattern='\\.R$', recursive=T))
@@ -358,7 +360,9 @@ haircut.align.contigs.with.ref<- function(infile, reffile, outfile)
 ##--------------------------------------------------------------------------------------------------------
 ##	process all files in indir with 'haircut.get.cut.statistics'
 ##--------------------------------------------------------------------------------------------------------
+#' @title Compute descriptive statistics that are used to calculate the call probability
 #' @export
+#' @example example/ex.get.cut.statistics.R
 haircutwrap.get.cut.statistics<- function(indir, par, outdir=indir)	
 {
 	require(zoo)

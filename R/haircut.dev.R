@@ -363,16 +363,21 @@ prog.haircut.150806<- function()
 		outdir		<- paste(DATA,'contigs_150408_model150816a',sep='/')
 		trainfile	<- paste(DATA,'contigs_150408_trainingset_subsets.R',sep='/')
 		batch.n		<- 200
-		for(batch.id in seq.int(1,1))
+		
+		tmp			<- data.table(INFILE=list.files(indir.st, pattern='\\.R$', recursive=T))
+		tmp[, BATCH:= ceiling(seq_len(nrow(tmp))/batch.n)]
+		tmp			<- tmp[, max(BATCH)]
+		for(batch.id in seq.int(1,tmp))
 		{			
 			cmd			<- cmd.haircut.call(indir.st, indir.al, outdir, mfile, trainfile=trainfile, batch.n=batch.n, batch.id=batch.id, prog=PR.HAIRCUT.CALL )
-			cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=71, hpc.mem="5000mb")
+			cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=4, hpc.mem="5000mb")
 			cat(cmd)		
-			outdir		<- paste(HOME,"tmp",sep='/')
-			outfile		<- paste("vrs",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.')
-			cmd.hpccaller(outdir, outfile, cmd)
-			quit("no")	
-		}		
+			outdir		<- paste(DATA,"tmp",sep='/')
+			outfile		<- paste("hrct",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.')
+			cmd.hpccaller(outdir, outfile, cmd)	
+			stop()
+		}	
+		quit("no")
 	}
 	if(0)
 	{
@@ -392,10 +397,6 @@ prog.haircut.150806<- function()
 		outdir	<- paste(DATA,'contigs_150408_model150816a',sep='/')
 		par		<- c(	'FRQx.quantile'=NA, 'FRQx.thr'=NA, 'CNS_FRQ.window'=200, 'CNS_AGR.window'=200, 'GPS.window'=200, 
 				'PRCALL.thrmax'=0.8, 'PRCALL.thrstd'=10, 'PRCALL.cutprdcthair'=150, 'PRCALL.cutprdctcntg'=50, 'PRCALL.cutrawgrace'=100, 'PRCALL.rmintrnlgpsblw'=100 ,'PRCALL.rmintrnlgpsend'=9700)
-		print(indir.st)
-		print(indir.al)
-		print(outdir)
-		print(par)
 		haircutwrap.get.call.for.PNG_ID(indir.st,indir.al,outdir,ctrmc,predict.fun,par,ctrain=ctrain)
 	}
 }
