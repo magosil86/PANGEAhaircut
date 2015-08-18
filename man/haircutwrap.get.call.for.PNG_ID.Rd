@@ -34,18 +34,19 @@ haircutwrap.get.call.for.PNG_ID(indir.st,indir.al,outdir,ctrmc,predict.fun,par,c
 }
 #
 #	run from command line 
+#	this produces a command line string that can be run in UNIX alikes
 #
 \dontrun{
-	indir.st	<- paste(DATA,'contigs_150408_wref_cutstat',sep='/')
-	indir.al	<- paste(DATA,'contigs_150408_wref',sep='/')
-	outdir		<- paste(DATA,'contigs_150408_model150816a',sep='/')
-	trainfile	<- paste(DATA,'contigs_150408_trainingset_subsets.R',sep='/')
-	batch.n		<- 200
-	cmd			<- cmd.haircut.call(indir.st, indir.al, outdir, trainfile=trainfile, batch.n=batch.n, batch.id=batch.id, prog=PR.HAIRCUT.CALL )
-	cat(cmd)
+x
+#DATA		<- SET THIS DIRECTORY
+indir.st	<- paste(DATA,'contigs_150408_wref_cutstat',sep='/')
+indir.al	<- paste(DATA,'contigs_150408_wref',sep='/')
+outdir		<- paste(DATA,'contigs_150408_model150816a',sep='/')
+cmd			<- cmd.haircut.call(indir.st, indir.al, outdir)
+cat(cmd)
 }
 #
-#	create multiple runs on HPC 
+#	create multiple runs on HPC using the command line version
 #
 \dontrun{
 	

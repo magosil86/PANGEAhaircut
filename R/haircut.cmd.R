@@ -7,6 +7,8 @@ PR.VARIOUS					<- paste(PR.STARTME," -exe=VARIOUS",sep='')
 #' @export
 PR.HAIRCUT.CALL				<- paste('Rscript',system.file(package=PR.PACKAGE, "haircut.call.contigs.Rscript"))
 #' @export
+PR.HAIRCUT.CUTSTAT			<- paste('Rscript',system.file(package=PR.PACKAGE, "haircut.cutstat.contigs.Rscript"))
+#' @export
 HPC.MPIRUN					<- {tmp<- c("mpirun","mpiexec"); names(tmp)<- c("debug","cx1.hpc.ic.ac.uk"); tmp}
 #' @export
 HPC.CX1.IMPERIAL			<- "cx1.hpc.ic.ac.uk"		#this is set to system('domainname',intern=T) for the hpc cluster of choice
@@ -46,7 +48,7 @@ cmd.various<- function(prog= PR.VARIOUS)
 cmd.haircut.call<- function(indir.st, indir.al, outdir, mfile=NA, trainfile=NA, batch.n=NA, batch.id=NA, prog=PR.HAIRCUT.CALL )	
 {
 	cmd<- "\n#######################################################
-# start: run haircutprog.get.call.for.PNG_ID
+# start: run haircut.call.contigs.Rscript
 #######################################################"
 	cmd		<- paste(cmd, paste("\necho \'run ",prog,"\'\n",sep=''))
 	cmd		<- paste(cmd, paste(prog,' -indir.st=',indir.st,' -indir.al=',indir.al,' -outdir=',outdir, sep=''))
@@ -58,7 +60,26 @@ cmd.haircut.call<- function(indir.st, indir.al, outdir, mfile=NA, trainfile=NA, 
 		cmd	<- paste(cmd, ' -batch.n=',batch.n, ' -batch.id=',batch.id, sep='')
 	cmd		<- paste('\n',cmd,paste("\necho \'end ",prog,"\'\n",sep=''))
 	cmd		<- paste(cmd,"#######################################################
-# end: run haircutprog.get.call.for.PNG_ID
+# end: run haircut.call.contigs.Rscript
+#######################################################\n",sep='')
+	cmd
+}
+##--------------------------------------------------------------------------------------------------------
+##	command line generator for 'haircut.cutstat.contigs.Rscript'
+##--------------------------------------------------------------------------------------------------------
+#' @export
+cmd.haircut.cutstat<- function(indir, outdir, batch.n=NA, batch.id=NA, prog=PR.HAIRCUT.CUTSTAT )	
+{
+	cmd<- "\n#######################################################
+# start: run haircut.cutstat.contigs.Rscript
+#######################################################"
+	cmd		<- paste(cmd, paste("\necho \'run ",prog,"\'\n",sep=''))
+	cmd		<- paste(cmd, paste(prog,' -indir=',indir,' -outdir=',outdir, sep=''))
+	if(!is.na(batch.n) & !is.na(batch.id))
+		cmd	<- paste(cmd, ' -batch.n=',batch.n, ' -batch.id=',batch.id, sep='')
+	cmd		<- paste('\n',cmd,paste("\necho \'end ",prog,"\'\n",sep=''))
+	cmd		<- paste(cmd,"#######################################################
+# end: run haircut.cutstat.contigs.Rscript
 #######################################################\n",sep='')
 	cmd
 }

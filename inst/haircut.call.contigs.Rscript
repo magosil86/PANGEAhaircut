@@ -48,7 +48,7 @@ if(length(args))
 								batch.id= return(as.numeric(substr(arg,11,nchar(arg)))),NA)	}))
 	if(length(tmp)>0) batch.id<- tmp[1]
 }
-if( is.na(mfile) || is.na(indir.st) || is.na(indir.al) || is.na(outdir))
+if( is.na(indir.st) || is.na(indir.al) || is.na(outdir))
 {
 	stop('\nUsage:
 Rscript haircut.call.contig -indir.st=INDIRST -indir.al=INDIRAL -outdir=OUTDIR [-mfile=MFILE -trainfile=TRAINFILE -batch.n=BATCHN -batch.id=BATCHID]

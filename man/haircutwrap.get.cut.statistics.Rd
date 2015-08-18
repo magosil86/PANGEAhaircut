@@ -3,7 +3,8 @@
 \alias{haircutwrap.get.cut.statistics}
 \title{Compute descriptive statistics that are used to calculate the call probability}
 \usage{
-haircutwrap.get.cut.statistics(indir, par, outdir = indir)
+haircutwrap.get.cut.statistics(indir, par, outdir = indir, batch.n = NA,
+  batch.id = NA)
 }
 \description{
 Compute descriptive statistics that are used to calculate the call probability

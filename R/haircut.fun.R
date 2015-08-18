@@ -363,7 +363,7 @@ haircut.align.contigs.with.ref<- function(infile, reffile, outfile)
 #' @title Compute descriptive statistics that are used to calculate the call probability
 #' @export
 #' @example example/ex.get.cut.statistics.R
-haircutwrap.get.cut.statistics<- function(indir, par, outdir=indir)	
+haircutwrap.get.cut.statistics<- function(indir, par, outdir=indir, batch.n=NA, batch.id=NA)	
 {
 	require(zoo)
 	#	read just one file
@@ -372,6 +372,12 @@ haircutwrap.get.cut.statistics<- function(indir, par, outdir=indir)
 	infiles[, PNG_ID:= gsub('_wRefs\\.fasta','',gsub('_cut|_raw','',FILE))]
 	infiles[, BLASTnCUT:= regmatches(FILE,regexpr('cut|raw',FILE))]
 	set(infiles, NULL, 'BLASTnCUT', infiles[, factor(BLASTnCUT, levels=c('cut','raw'), labels=c('Y','N'))])
+	if(!is.na(batch.n) & !is.na(batch.id))
+	{
+		infiles[, BATCH:= ceiling(seq_len(nrow(infiles))/batch.n)]
+		infiles		<- subset(infiles, BATCH==batch.id)
+	}
+	
 	#	check which contigs not yet processed
 	infiles		<- merge(infiles, infiles[, {
 						file	<- paste(indir, FILE, sep='/')

@@ -1,0 +1,69 @@
+cat("#######################################################
+# haircut.cutstat.contig
+# This is version 150816.	
+#######################################################")
+args <- commandArgs()
+if(!any(args=='--args'))
+	args<- vector("numeric",0)
+if(any(args=='--args'))
+	args<- args[-(1:match("--args", args)) ]
+#	default args
+verbose			<- 1
+indir.st		<- NA
+outdir			<- NA
+batch.n			<- NA
+batch.id		<- NA
+if(length(args))
+{
+	#	args input			
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,6),
+								indir= return(substr(arg,8,nchar(arg))),NA)	}))
+	if(length(tmp)>0) indir<- tmp[1]			
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,7),
+								outdir= return(substr(arg,9,nchar(arg))),NA)	}))
+	if(length(tmp)>0) outdir<- tmp[1]			
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,8),
+								batch.n= return(as.numeric(substr(arg,10,nchar(arg)))),NA)	}))
+	if(length(tmp)>0) batch.n<- tmp[1]
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,9),
+								batch.id= return(as.numeric(substr(arg,11,nchar(arg)))),NA)	}))
+	if(length(tmp)>0) batch.id<- tmp[1]
+}
+if( is.na(indir) || is.na(outdir))
+{
+	stop('\nUsage:
+Rscript haircut.cutstat.contig.Rscript -indir=INDIR -outdir=OUTDIR [-batch.n=BATCHN -batch.id=BATCHID]
+where
+INDIR\tdirectory of contigs in fasta format, aligned to references
+OUTDIR\toutput directory
+BATCHN\tOptional: Number of PANGEA_IDs to process in parallel 
+BATCHID\tOptional: Batch ID of PANGEA_IDs that are processed in parallel
+')
+}
+if(verbose)
+{
+	cat('\ninput args\n',paste(indir, outdir, batch.n, batch.id, sep='\n'))
+}	
+###############################################################################
+#	helper functions for debugging
+my.dumpframes<- function()
+{
+	geterrmessage()
+	dump.frames()
+	cat(paste("\nmy.dumpframes dump 'last.dump' to file",paste(HOME,paste("debug_",paste(strsplit(date(),' ')[[1]],collapse='_'),".rda\n",sep=''),sep='')))
+	save(last.dump, file=paste(HOME,paste("debug_",paste(strsplit(date(),' ')[[1]],collapse='_'),".rda",sep=''),sep=''))
+	q()
+}
+###############################################################################
+#	set debugging
+if(DEBUG)	
+	options(error= my.dumpframes)	
+###############################################################################
+#	run script
+require(PANGEAhaircut)
+par			<- c('FRQx.quantile'=NA, 'FRQx.thr'=NA, 'CNS_FRQ.window'=200, 'CNS_AGR.window'=200, 'GPS.window'=200)
+haircutwrap.get.cut.statistics(indir, par, outdir=outdir, batch.n=batch.n, batch.id=batch.id)
