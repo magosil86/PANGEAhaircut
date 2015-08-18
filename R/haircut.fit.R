@@ -375,6 +375,7 @@ haircut.get.curated.contigs<- function(indir, outfile)
 ##--------------------------------------------------------------------------------------------------------
 ##	Binomial model using FRQ and GAP
 ##--------------------------------------------------------------------------------------------------------
+#' @import data.table zoo plyr ape reshape2 ggplot2
 #' @export
 haircut.get.fitted.model.150816a<- function(indir=NA, outfile=NA)
 {

@@ -339,9 +339,15 @@ prog.haircut.150806<- function()
 		indir		<- paste(DATA, 'contigs_150408_wref', sep='/' )
 		outdir		<- paste(DATA, 'contigs_150408_wref_cutstat', sep='/' )		
 		par			<- c('FRQx.quantile'=NA, 'FRQx.thr'=NA, 'CNS_FRQ.window'=200, 'CNS_AGR.window'=200, 'GPS.window'=200)
-		batch.n		<- 200
-		batch.id	<- 1
+		batch.n		<- NA
+		batch.id	<- NA
 		haircutwrap.get.cut.statistics(indir, par, outdir=outdir, batch.n=batch.n, batch.id=batch.id)
+	}
+	if(0)
+	{
+		indir		<- paste(DATA, 'contigs_150408_wref', sep='/' )
+		outdir		<- paste(DATA, 'contigs_150408_wref_cutstat', sep='/' )				
+		cat(cmd.haircut.cutstat(indir, outdir, batch.n=200, batch.id=1))		
 	}
 	if(0)
 	{

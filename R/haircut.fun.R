@@ -4,7 +4,8 @@
 ##--------------------------------------------------------------------------------------------------------
 ##	wrapper to call 'haircutwrap.get.call.for.PNG_ID'
 ##--------------------------------------------------------------------------------------------------------
-#' @title Call 10bp chunks of cut/raw contigs with the same PANGEA_ID 
+#' @title Call 10bp chunks of cut/raw contigs with the same PANGEA_ID
+#' @import data.table zoo plyr ape reshape2 ggplot2 
 #' @export
 #' @example example/ex.get.call.for.PNG_ID.R
 haircutwrap.get.call.for.PNG_ID<- function(indir.st,indir.al,outdir,ctrmc,predict.fun,par,ctrain=NULL,batch.n=NA,batch.id=NA)
@@ -329,6 +330,7 @@ haircut.get.call.for.PNG_ID<- function(indir.st, indir.al, png_id, files, alfile
 ##--------------------------------------------------------------------------------------------------------
 ##	process all files in indir with 'haircut.align.contigs.with.ref'
 ##--------------------------------------------------------------------------------------------------------
+#' @import data.table zoo plyr ape reshape2 ggplot2
 #' @export
 haircutwrap.align.contigs.with.ref<- function(indir, reffile, outdir)
 {
@@ -361,6 +363,7 @@ haircut.align.contigs.with.ref<- function(infile, reffile, outfile)
 ##	process all files in indir with 'haircut.get.cut.statistics'
 ##--------------------------------------------------------------------------------------------------------
 #' @title Compute descriptive statistics that are used to calculate the call probability
+#' @import data.table zoo plyr ape reshape2 ggplot2
 #' @export
 #' @example example/ex.get.cut.statistics.R
 haircutwrap.get.cut.statistics<- function(indir, par, outdir=indir, batch.n=NA, batch.id=NA)	
