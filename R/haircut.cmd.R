@@ -3,7 +3,7 @@ PR.STARTME					<- system.file(package=PR.PACKAGE, "misc", "PANGEAhaircut.startme
 #PR.STARTME					<- '/Users/Oliver/git/HPTN071sim/source/rPANGEAHIVsim/misc/rPANGEAHIV.startme.R'
 #PR.STARTME					<- '/work/or105/libs/HPTN071sim/source/rPANGEAHIVsim/misc/rPANGEAHIV.startme.R'
 PR.VARIOUS					<- paste(PR.STARTME," -exe=VARIOUS",sep='')
-PR.HAIRCUT.CALL				<- paste('Rscript',system.file(package=PR.PACKAGE, "misc", "haircut.call.contigs.Rscript"))
+PR.HAIRCUT.CALL				<- paste('Rscript',system.file(package=PR.PACKAGE, "haircut.call.contigs.Rscript"))
 
 HPC.MPIRUN					<- {tmp<- c("mpirun","mpiexec"); names(tmp)<- c("debug","cx1.hpc.ic.ac.uk"); tmp}
 HPC.CX1.IMPERIAL			<- "cx1.hpc.ic.ac.uk"		#this is set to system('domainname',intern=T) for the hpc cluster of choice

@@ -2,6 +2,7 @@
 #	within R
 #
 \dontrun{
+	
 #DATA					<- SET THIS DIRECTORY		
 tmp						<- haircut.get.fitted.model.150816a()
 ctrmc					<- tmp$coef		
@@ -20,9 +21,22 @@ par		<- c(	'FRQx.quantile'=NA, 'FRQx.thr'=NA, 'CNS_FRQ.window'=200, 'CNS_AGR.win
 haircutwrap.get.call.for.PNG_ID(indir.st,indir.al,outdir,ctrmc,predict.fun,par,ctrain=ctrain)	
 }
 #
+#	run from command line 
+#
+\dontrun{
+	indir.st	<- paste(DATA,'contigs_150408_wref_cutstat',sep='/')
+	indir.al	<- paste(DATA,'contigs_150408_wref',sep='/')
+	outdir		<- paste(DATA,'contigs_150408_model150816a',sep='/')
+	trainfile	<- paste(DATA,'contigs_150408_trainingset_subsets.R',sep='/')
+	batch.n		<- 200
+	cmd			<- cmd.haircut.call(indir.st, indir.al, outdir, trainfile=trainfile, batch.n=batch.n, batch.id=batch.id, prog=PR.HAIRCUT.CALL )
+	cat(cmd)
+}
+#
 #	create multiple runs on HPC 
 #
 \dontrun{
+	
 #DATA		<- SET THIS DIRECTORY
 indir.st	<- paste(DATA,'contigs_150408_wref_cutstat',sep='/')
 indir.al	<- paste(DATA,'contigs_150408_wref',sep='/')
