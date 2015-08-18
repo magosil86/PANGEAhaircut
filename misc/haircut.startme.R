@@ -1,0 +1,119 @@
+#! /Library/Frameworks/R.framework/Versions/3.1/Resources/bin/Rscript
+##! /apps/R/3.2.0/lib64/R/bin/Rscript
+###############################################################################
+# usage from R:
+#> setwd("/Users/Oliver/git/PANGEAhaircut"); source("misc/haircut.startme.R")
+#
+###############################################################################
+args <- commandArgs()
+if(!any(args=='--args'))
+	args<- vector("numeric",0)
+if(any(args=='--args'))
+	args<- args[-(1:match("--args", args)) ]
+#the package directory (local working copy of the code, not the installed package directory within the R directory 
+CODE.HOME	<<- "/Users/Oliver/git/PANGEAhaircut"
+#CODE.HOME	<<- "/work/or105/libs/PANGEAhaircut"
+
+#the home directory of all projects
+HOME		<<- "/Users/Oliver/git/PANGEAhaircut/"
+#HOME		<<- "/work/or105/Gates_2014"
+DATA		<<- '/Users/Oliver/Dropbox\ (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut'
+#DATA		<<- '/work/or105/Gates_2014/2015_PANGEA_haircut'
+
+DEBUG		<<- 1		#If 1, a dump file is created that can be loaded and computations can be inspected at the point of error.
+LIB.LOC		<<- NULL
+#LIB.LOC	<<- paste(CODE.HOME,"../",sep='')
+EPS			<<- 1e-12	#Machine precision	
+
+#the default script to be called if -exe is not specified on the command line	
+default.fun		<- 'pipeline.various'
+###############################################################################
+#	select script specified with -exe on the command line. If missing, start default script 'default.fun'.
+argv<- list()
+if(length(args))
+{
+	tmp<- na.omit(sapply(args,function(arg)
+					{
+						switch(substr(arg,2,4),
+								exe= return(substr(arg,6,nchar(arg))),
+								NA)
+					}))
+	if(length(tmp)!=0)
+	{
+		if(length(tmp)>1) stop("hivclu.startme.R: duplicate -exe")
+		else default.fun<- switch(tmp[1],
+					VARIOUS					= "prog.haircut.150806",
+					HAIRCUT.CALL			= "haircutprog.get.call.for.PNG_ID"	
+					)
+	}
+	tmp<- na.omit(sapply(args,function(arg)
+					{
+						switch(substr(arg,2,10),
+								code.home= return(substr(arg,12,nchar(arg))),
+								NA)
+					}))	
+	if(length(tmp)!=0)	CODE.HOME<<- tmp[1]
+	tmp<- na.omit(sapply(args,function(arg)
+					{
+						switch(substr(arg,2,6),
+								debug= 1,
+								NA)
+					}))		
+	if(length(tmp)!=0)	DEBUG<<- tmp[1]	
+	argv<<- args
+}
+###############################################################################
+.ls.objects <- function (pos = 1, pattern, order.by,
+		decreasing=FALSE, head=FALSE, n=5) {
+	napply <- function(names, fn) sapply(names, function(x)
+					fn(get(x, pos = pos)))
+	names <- ls(pos = pos, pattern = pattern)
+	obj.class <- napply(names, function(x) as.character(class(x))[1])
+	obj.mode <- napply(names, mode)
+	obj.type <- ifelse(is.na(obj.class), obj.mode, obj.class)
+	obj.prettysize <- napply(names, function(x) {
+				capture.output(print(object.size(x), units = "auto")) })
+	obj.size <- napply(names, object.size)
+	obj.dim <- t(napply(names, function(x)
+						as.numeric(dim(x))[1:2]))
+	vec <- is.na(obj.dim)[, 1] & (obj.type != "function")
+	obj.dim[vec, 1] <- napply(names, length)[vec]
+	out <- data.frame(obj.type, obj.size, obj.prettysize, obj.dim)
+	names(out) <- c("Type", "Size", "PrettySize", "Rows", "Columns")
+	if (!missing(order.by))
+		out <- out[order(out[[order.by]], decreasing=decreasing), ]
+	if (head)
+		out <- head(out, n)
+	out
+}
+# from: http://stackoverflow.com/questions/1358003/tricks-to-manage-the-available-memory-in-an-r-session
+lsos <- function(..., n=10) {
+	.ls.objects(..., order.by="Size", decreasing=TRUE, head=TRUE, n=n)
+}
+my.mkdir<-function(root,data.name)
+{
+	if(length(dir(root,pattern=paste('^',data.name,'$',sep='')))==0)
+		system(paste("mkdir ",paste(root,data.name,sep='/'),sep=''))
+}
+my.dumpframes<- function()
+{
+	geterrmessage()
+	dump.frames()
+	cat(paste("\nmy.dumpframes dump 'last.dump' to file",paste(HOME,paste("debug_",paste(strsplit(date(),' ')[[1]],collapse='_'),".rda\n",sep=''),sep='')))
+	save(last.dump, file=paste(HOME,paste("debug_",paste(strsplit(date(),' ')[[1]],collapse='_'),".rda",sep=''),sep=''))
+	q()
+}
+###############################################################################
+#	re-load all R files
+require(PANGEAHIVhaircut)
+print(CODE.HOME)
+function.list<-c(list.files(path= paste(CODE.HOME,"R",sep='/'), pattern = ".R$", all.files = FALSE,
+				full.names = TRUE, recursive = FALSE))
+sapply(function.list,function(x){ source(x,echo=FALSE,print.eval=FALSE, verbose=FALSE) })
+###############################################################################
+#	run script
+#stop()
+if(DEBUG)	options(error= my.dumpframes)	
+cat(paste("\nPANGEAhaircut: ",ifelse(DEBUG,"debug",""),"call",default.fun,"\n"))
+do.call(default.fun,list()) 	
+cat("\nPANGEAhaircut: ",ifelse(DEBUG,"debug","")," end\n")

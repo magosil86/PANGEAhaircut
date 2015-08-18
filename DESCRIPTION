@@ -1,0 +1,18 @@
+Package: PANGEAhaircut
+Version: 1.0-0
+Date: 2015/08/18
+Title: abc.star
+Author: {Oliver Ratmann}
+Maintainer: Oliver Ratmann <o.ratmann@imperial.ac.uk>
+Depends:
+    R (>= 3.2.0)
+Imports:
+    data.table,
+    zoo,
+    plyr,
+    ape,
+    ggplot2,
+    reshape2
+Description: NA
+License: NA
+LazyLoad: NA
