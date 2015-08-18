@@ -403,7 +403,7 @@ haircutwrap.get.cut.statistics<- function(indir, par, outdir=indir, batch.n=NA, 
 		cr		<- read.dna(file, format='fasta')
 		if(!is.matrix(cr) || nrow(cr)==0)
 			warning('Found unexpected file format for file ', file)
-		if(is.matrix(cr) & nrow(cr)>0)
+		if(is.matrix(cr) && nrow(cr)>0)
 		{
 			#	determine start of non-LTR position and cut 
 			cr		<- cr[, seq.int(haircut.find.nonLTRstart(cr), ncol(cr))]
