@@ -25,7 +25,7 @@ haircutwrap.get.call.for.PNG_ID(indir.st,indir.al,outdir,ctrmc,predict.fun,par,c
 #	this produces a command line string that can be run in UNIX alikes
 #
 \dontrun{
-x
+
 #DATA		<- SET THIS DIRECTORY
 indir.st	<- paste(DATA,'contigs_150408_wref_cutstat',sep='/')
 indir.al	<- paste(DATA,'contigs_150408_wref',sep='/')
@@ -56,7 +56,6 @@ for(batch.id in seq.int(1,tmp))
 	outdir		<- paste(DATA,"tmp",sep='/')
 	outfile		<- paste("hrct",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.')
 	cmd.hpccaller(outdir, outfile, cmd)	
-	stop()
 }	
 quit("no")
 }

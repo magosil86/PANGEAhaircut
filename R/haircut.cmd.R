@@ -65,6 +65,41 @@ cmd.haircut.call<- function(indir.st, indir.al, outdir, mfile=NA, trainfile=NA, 
 	cmd
 }
 ##--------------------------------------------------------------------------------------------------------
+##	command line generator to run 'haircut.cutstat.contigs.Rscript' and 'haircut.call.contigs.Rscript' one after each other
+##--------------------------------------------------------------------------------------------------------
+#' @export
+cmd.haircut.pipeline<- function(indir, outdir, batch.n=NA, batch.id=NA)
+{
+	#create specific outdir
+	cmd				<- "#######################################################
+#
+# start: run haircut.pipeline
+#
+#######################################################\n"	
+	#create temporary directories
+	cutdir		<- paste('cutstat_',format(Sys.time(),"%y-%m-%d-%H-%M-%S"),sep='')
+	outdir.lcl	<- paste('call_',format(Sys.time(),"%y-%m-%d-%H-%M-%S"),sep='')
+	cmd			<- paste(cmd,"CWD=$(pwd)\n",sep='\n')
+	cmd			<- paste(cmd,"echo $CWD\n",sep='')
+	cutdir		<- paste("$CWD/",cutdir,sep='')
+	outdir.lcl	<- paste("$CWD/",outdir.lcl,sep='')
+	cmd			<- paste(cmd,"mkdir -p ",cutdir,'\n',sep='')
+	cmd			<- paste(cmd,"mkdir -p ",outdir.lcl,'\n',sep='')
+	#run cutstat on batch into cutdir
+	cmd			<- paste(cmd, cmd.haircut.cutstat(indir, cutdir, batch.n=batch.n, batch.id=batch.id), sep='')
+	#run call on all seqs in cutdir
+	cmd			<- paste(cmd, cmd.haircut.call(cutdir, indir, outdir.lcl), sep='')
+	#copy to destination
+	cmd			<- paste(cmd, "\nmv ",outdir.lcl,"/* ",outdir,"\n",sep='')
+	cmd			<- paste(cmd, "rm -d ",outdir.lcl," ",cutdir,"\n",sep='')
+	cmd			<- paste(cmd, "\n#######################################################
+#
+# end: run haircut.pipeline
+#
+#######################################################\n",sep='')
+	cmd
+}
+##--------------------------------------------------------------------------------------------------------
 ##	command line generator for 'haircut.cutstat.contigs.Rscript'
 ##--------------------------------------------------------------------------------------------------------
 #' @export
