@@ -400,41 +400,47 @@ haircutwrap.get.cut.statistics<- function(indir, par, outdir=indir, batch.n=NA, 
 		file	<- paste(indir, infiles[fls, FILE], sep='/')
 		cat(paste('\nProcess', file))
 		#	read Contigs+Rrefs: cr
-		cr		<- read.dna(file, format='fasta')			
-		#	determine start of non-LTR position and cut 
-		cr		<- cr[, seq.int(haircut.find.nonLTRstart(cr), ncol(cr))]
-		#	cut at last site of references
-		cr		<- cr[, seq.int(1, haircut.find.lastRefSite(cr))]		
-		#	determine reference sequences. 
-		#	non-refs have the first part of the file name in their contig name and are at the top of the alignment
-		tmp		<- strsplit(basename(file), '_')[[1]][1]
-		tx		<- data.table(TAXON= rownames(cr), CONTIG=as.integer(grepl(tmp, rownames(cr))) )
-		stopifnot( all( tx[, which(CONTIG==1)] == seq.int(1, tx[, length(which(CONTIG==1))]) ) )
-		cat(paste('\nFound contigs, n=', tx[, length(which(CONTIG==1))]))
-		#	determine base frequencies at each site amongst references.
-		tmp		<- cr[subset(tx, CONTIG==0)[, TAXON],]
-		rp		<- haircut.get.frequencies(tmp, bases=c('a','c','g','t','-') )
-		tmp		<- haircut.get.consensus.from.frequencies(rp, par)
-		cnsr	<- tmp$DNAbin
-		cnsr.df	<- tmp$DATATABLE
-		#	for each contig, determine %agreement with consensus on rolling window
-		cnsc	<- rbind(cnsr, cr[subset(tx, CONTIG==1)[, TAXON],])
-		#	determine first and last non-gap sites
-		tmp		<- as.character(cnsc)
-		tx		<- data.table(	TAXON= rownames(cnsc), 
-				FIRST= apply( tmp, 1, function(x) which(x!='-')[1] ),
-				LAST= ncol(cnsc)-apply( tmp, 1, function(x) which(rev(x)!='-')[1] )+1L		)
-		tx		<- subset(tx, !is.na(FIRST) & !is.na(LAST))	#	some contigs only map into LTR
-		#	determine all cut statistics
-		cnsc.df	<- haircut.get.cut.statistics(cnsc, rp, tx, par)		
-		#ggplot(cnsc.df, aes(x=SITE)) +facet_wrap(~TAXON, ncol=1) + geom_line(aes(y=FRQ), colour='black') + geom_line(aes(y=AGRpc), colour='blue') + geom_line(aes(y=GPS), colour='red') + geom_line(aes(y=FRQ-2*FRQ_STD), colour='DarkGreen')
-		cnsc.df[, PNG_ID:= infiles[fls, PNG_ID]]
-		cnsc.df[, BLASTnCUT:= infiles[fls, BLASTnCUT]]
-		cat(paste('\nSave contigs, n=', cnsc.df[, length(unique(TAXON))]))
-		#	save
-		file	<- paste(outdir, '/', gsub('\\.fasta',paste('_HAIRCUTSTAT_thr',100*par['FRQx.quantile'],'_aw',par['CNS_AGR.window'],'_fw',par['CNS_FRQ.window'],'_gw',par['GPS.window'],'.R',sep=''),basename(file)), sep='')
-		cat(paste('\nSave to', file))
-		save(cnsc, cnsc.df, file=file)		
+		cr		<- read.dna(file, format='fasta')
+		if(!is.matrix(cr) || nrow(cr)==0)
+			warning('Found unexpected file format for file ', file)
+		if(is.matrix(cr) & nrow(cr)>0)
+		{
+			#	determine start of non-LTR position and cut 
+			cr		<- cr[, seq.int(haircut.find.nonLTRstart(cr), ncol(cr))]
+			#	cut at last site of references
+			cr		<- cr[, seq.int(1, haircut.find.lastRefSite(cr))]		
+			#	determine reference sequences. 
+			#	non-refs have the first part of the file name in their contig name and are at the top of the alignment
+			tmp		<- strsplit(basename(file), '_')[[1]][1]
+			tx		<- data.table(TAXON= rownames(cr), CONTIG=as.integer(grepl(tmp, rownames(cr))) )
+			tx		<- tx[order(-CONTIG, na.last=TRUE)]
+			cr		<- cr[tx[,TAXON],]			
+			cat(paste('\nFound contigs, n=', tx[, length(which(CONTIG==1))]))
+			#	determine base frequencies at each site amongst references.
+			tmp		<- cr[subset(tx, CONTIG==0)[, TAXON],]
+			rp		<- haircut.get.frequencies(tmp, bases=c('a','c','g','t','-') )
+			tmp		<- haircut.get.consensus.from.frequencies(rp, par)
+			cnsr	<- tmp$DNAbin
+			cnsr.df	<- tmp$DATATABLE
+			#	for each contig, determine %agreement with consensus on rolling window
+			cnsc	<- rbind(cnsr, cr[subset(tx, CONTIG==1)[, TAXON],])
+			#	determine first and last non-gap sites
+			tmp		<- as.character(cnsc)
+			tx		<- data.table(	TAXON= rownames(cnsc), 
+					FIRST= apply( tmp, 1, function(x) which(x!='-')[1] ),
+					LAST= ncol(cnsc)-apply( tmp, 1, function(x) which(rev(x)!='-')[1] )+1L		)
+			tx		<- subset(tx, !is.na(FIRST) & !is.na(LAST))	#	some contigs only map into LTR
+			#	determine all cut statistics
+			cnsc.df	<- haircut.get.cut.statistics(cnsc, rp, tx, par)		
+			#ggplot(cnsc.df, aes(x=SITE)) +facet_wrap(~TAXON, ncol=1) + geom_line(aes(y=FRQ), colour='black') + geom_line(aes(y=AGRpc), colour='blue') + geom_line(aes(y=GPS), colour='red') + geom_line(aes(y=FRQ-2*FRQ_STD), colour='DarkGreen')
+			cnsc.df[, PNG_ID:= infiles[fls, PNG_ID]]
+			cnsc.df[, BLASTnCUT:= infiles[fls, BLASTnCUT]]
+			cat(paste('\nSave contigs, n=', cnsc.df[, length(unique(TAXON))]))
+			#	save
+			file	<- paste(outdir, '/', gsub('\\.fasta',paste('_HAIRCUTSTAT_thr',100*par['FRQx.quantile'],'_aw',par['CNS_AGR.window'],'_fw',par['CNS_FRQ.window'],'_gw',par['GPS.window'],'.R',sep=''),basename(file)), sep='')
+			cat(paste('\nSave to', file))
+			save(cnsc, cnsc.df, file=file)	
+		}				
 	}
 }
 ##--------------------------------------------------------------------------------------------------------
