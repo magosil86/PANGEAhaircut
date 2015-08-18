@@ -12,6 +12,7 @@ HPC.CX1.IMPERIAL.LOAD		<- "module load intel-suite mpi mafft/7 R/3.2.0"
 
 
 ######################################################################################
+#' @export
 cmd.hpcsys<- function()
 {
 	tmp<- system('domainname',intern=T)
@@ -37,13 +38,16 @@ cmd.various<- function(prog= PR.VARIOUS)
 ##	command line generator for 'prog.HPTN071.input.parser.v4'
 ##	olli originally written 16-08-2015
 ##--------------------------------------------------------------------------------------------------------
-cmd.haircut.call<- function(indir.st, indir.al, outdir, mfile, trainfile=NA, batch.n=NA, batch.id=NA, prog=PR.HAIRCUT.CALL )	
+#' @export
+cmd.haircut.call<- function(indir.st, indir.al, outdir, mfile=NA, trainfile=NA, batch.n=NA, batch.id=NA, prog=PR.HAIRCUT.CALL )	
 {
 	cmd<- "#######################################################
 # start: run haircutprog.get.call.for.PNG_ID
 #######################################################"
 	cmd		<- paste(cmd, paste("\necho \'run ",prog,"\'\n",sep=''))
-	cmd		<- paste(cmd, paste(prog,' -mfile=', mfile,' -indir.st=',indir.st,' -indir.al=',indir.al,' -outdir=',outdir, sep=''))
+	cmd		<- paste(cmd, paste(prog,' -indir.st=',indir.st,' -indir.al=',indir.al,' -outdir=',outdir, sep=''))
+	if(!is.na(mfile))
+		cmd	<- paste(cmd, ' -mfile=',mfile, sep='')	
 	if(!is.na(trainfile))
 		cmd	<- paste(cmd, ' -trainfile=',trainfile, sep='')
 	if(!is.na(batch.n) & !is.na(batch.id))
@@ -58,6 +62,7 @@ cmd.haircut.call<- function(indir.st, indir.al, outdir, mfile, trainfile=NA, bat
 ##	batch file wrapper
 ##	olli originally written 26-08-2014
 ##--------------------------------------------------------------------------------------------------------
+#' @export
 cmd.hpcwrapper<- function(cmd, hpcsys= cmd.hpcsys(), hpc.walltime=24, hpc.mem="1750mb", hpc.nproc=1, hpc.q=NA)
 {
 	wrap<- "#!/bin/sh"
@@ -87,6 +92,7 @@ cmd.hpcwrapper<- function(cmd, hpcsys= cmd.hpcsys(), hpc.walltime=24, hpc.mem="1
 ##	batch file caller
 ##	olli originally written 26-08-2014
 ##--------------------------------------------------------------------------------------------------------
+#' @export
 cmd.hpccaller<- function(outdir, outfile, cmd)
 {
 	if( nchar( Sys.which("qsub") ) )

@@ -376,87 +376,96 @@ haircut.get.curated.contigs<- function(indir, outfile)
 ##	Binomial model using FRQ and GAP
 ##--------------------------------------------------------------------------------------------------------
 #' @export
-haircut.get.fitted.model.150816a<- function(indir, outfile)
+haircut.get.fitted.model.150816a<- function(indir=NA, outfile=NA)
 {
-	options(show.error.messages = FALSE)		
-	readAttempt		<-try(suppressWarnings(load(outfile)))
-	options(show.error.messages = TRUE)	
-	if( inherits(readAttempt, "try-error")	)
+	if(is.na(outfile) | is.na(indir))		#	load from R package
 	{
-		ctrmc	<- do.call('rbind', lapply(seq(1,10001,200), function(site)
-						{
-							cat('\nProcess',site,'\n')							
-							ctr		<- haircut.load.training.data(indir, site)	
-							tmp		<- seq(ctr[, min(SITE)-1],ctr[, max(SITE)+10],10)
-							tmp		<- tmp[tmp<=10000 | tmp==floor(ctr[, max(SITE)+10]/10)*10]
-							ctr[, CHUNK:=cut(SITE, breaks=tmp, labels=tmp[-length(tmp)])]							
-							ctrmc	<- do.call('rbind',lapply(ctr[, unique(CHUNK)], function(chunk)
-											{
-												ctrch	<- subset(ctr, CHUNK==chunk)
-												ctrchm	<- gamlss(ANS_CALL~FRQ+GPS, data=ctrch, family=BI())				#as good as 'AGRpc+GPS+CNS_FRQr' in terms of FN, FP
-												ctrchmc	<- data.table(CHUNK=chunk, BETA0=coef(ctrchm)[1], BETA1=coef(ctrchm)[2], BETA2=coef(ctrchm)[3])					
-											}))
-						}))
-		#	deal with end of genome where little data is available: we estimated coefs for all sites > 1e4, now split up using CHUNK notation
-		ctr		<- haircut.load.training.data(indir, 10001)
-		tmp		<- seq(ctr[, min(SITE)-1],ctr[, max(SITE)+10],10)
-		tmp		<- as.data.table(expand.grid(CHUNK=as.character(tmp[tmp>10000]), BETA0=subset(ctrmc, CHUNK==10000)[, BETA0], BETA1=subset(ctrmc, CHUNK==10000)[, BETA1], BETA2=subset(ctrmc, CHUNK==10000)[, BETA2], stringsAsFactors=F))
-		ctrmc	<- rbind(ctrmc, tmp)
-		#	model predict function, so we save mem by not having to call 'predict'
-		model.150816a.predict<- function(frq, gps, b0, b1, b2)
-		{	
-			stopifnot(all(!is.na(frq)), all(!is.na(gps)))
-			b0[which(is.na(b0))]	<- 0
-			b1[which(is.na(b1))]	<- 0
-			b2[which(is.na(b2))]	<- 0
-			exp(b0+b1*frq+b2*gps)/(exp(b0+b1*frq+b2*gps)+1)	
-		}
-		#	calculate Sensitivity & Specificity on training data
-		ctrev	<- do.call('rbind', lapply(seq(1,10200,200), function(site)
-						{
-							cat('\nProcess',site,'\n')	
-							ctr		<- haircut.load.training.data(indir, site)	
-							tmp		<- seq(ctr[, min(SITE)-1],ctr[, max(SITE)+10],10)							
-							ctr[, CHUNK:=cut(SITE, breaks=tmp, labels=tmp[-length(tmp)])]
-							ctrp	<- merge(ctr, ctrmc, by='CHUNK')
-							ctrp[, PR_CALL:=model.150816a.predict(FRQ, GPS, BETA0, BETA1, BETA2)]														
-							setkey(ctrp, CHUNK)
-							if(0)
-							{
-								ctrev	<- as.data.table(expand.grid(THR= seq(0.05,0.95,0.01), CHUNK= as.character(ctrp[, unique(CHUNK)]), stringsAsFactors=FALSE))
-								ctrev	<- ctrev[, {																																
-											tmp	<- ctrp[CHUNK,][,table(ANS_CALL, factor(PR_CALL>=THR, levels=c('TRUE','FALSE'), labels=c('TRUE','FALSE')))]
-											list(TP= tmp['1','TRUE'], FP= tmp['0','TRUE'], FN= tmp['1','FALSE'], TN= tmp['0','FALSE'] )					
-										}, by=c('CHUNK','THR')]
-								ctrev	<- merge(ctrev, ctrev[, list(SENS= TP/(TP+FN), SPEC=TN/(TN+FP), FDR=FP/(FP+TP), FOR=FN/(FN+TN)), by=c('CHUNK','THR')], by=c('CHUNK','THR'))
-								
-							}
-							if(1)
-							{
-								ctrev	<- as.data.table(expand.grid(THR= c(seq(2,10,1), seq(15,30,5)), CHUNK= as.character(ctrp[, unique(CHUNK)]), stringsAsFactors=FALSE))
-								ctrev	<- ctrev[, {
-											ctrp[, CNS_PR_CALL:=CNS_FRQ-THR*CNS_FRQ_STD]
-											set(ctrp, NULL, 'CNS_PR_CALL', ctrp[,model.150816a.predict(CNS_PR_CALL, CNS_GPS, BETA0, BETA1, BETA2)])										
-											tmp	<- ctrp[CHUNK,][,table(ANS_CALL, factor(PR_CALL>=CNS_PR_CALL, levels=c('TRUE','FALSE'), labels=c('TRUE','FALSE')))]
-											list(TP= tmp['1','TRUE'], FP= tmp['0','TRUE'], FN= tmp['1','FALSE'], TN= tmp['0','FALSE'] )					
-										}, by=c('CHUNK','THR')]
-								ctrev	<- merge(ctrev, ctrev[, list(SENS= TP/(TP+FN), SPEC=TN/(TN+FP), FDR=FP/(FP+TP), FOR=FN/(FN+TN)), by=c('CHUNK','THR')], by=c('CHUNK','THR'))								
-							}
-							#	plot Sensitivity & Specificity
-							ggplot(melt(ctrev, id.vars=c('CHUNK','THR'), measure.vars=c('SENS','SPEC','FDR','FOR')), aes(x=THR, y=100*value, colour=CHUNK)) +
-									scale_x_reverse() +
-									geom_line() + labs(x='standard deviations of consensus call prob\nPR_CALL_CNT >= PR_CALL_CNS-x*std(PR_CALL_CNS)',y='%', colour='site\n(base relative to HXB2)') +
-									theme_bw() + theme(legend.position='bottom') + facet_wrap(~variable, ncol=2, scales='free') +									
-									guides(col = guide_legend(ncol=5, byrow=TRUE)) 
-							ggsave(file=paste(outdir,'/model.150816a_SensSpec_SITE',site,'.pdf',sep=''), w=9, h=9)
-							#
-							ctrev							
-						}))		
-		set(ctrev, NULL, 'CHUNK', ctrev[, as.numeric(CHUNK)])
-		
-		save(ctrmc, ctrev, model.150816a.predict, file=outfile)
+		options(show.error.messages = FALSE)		
+		readAttempt		<-try(suppressWarnings(load(system.file(package='PANGEAhaircut', "model_150816a.R"))))
+		options(show.error.messages = TRUE)	
+		if( inherits(readAttempt, "try-error")	)
+			stop('Cannot find model file on system location')
 	}
-	#list(coef=ctrmc, ev=ctrev, predict=model.150816a.predict)
+	if(!is.na(outfile) & !is.na(indir))		#	load from outfile, and if not there create
+	{
+		options(show.error.messages = FALSE)		
+		readAttempt		<-try(suppressWarnings(load(outfile)))
+		options(show.error.messages = TRUE)	
+		if( inherits(readAttempt, "try-error")	)
+		{
+			ctrmc	<- do.call('rbind', lapply(seq(1,10001,200), function(site)
+							{
+								cat('\nProcess',site,'\n')							
+								ctr		<- haircut.load.training.data(indir, site)	
+								tmp		<- seq(ctr[, min(SITE)-1],ctr[, max(SITE)+10],10)
+								tmp		<- tmp[tmp<=10000 | tmp==floor(ctr[, max(SITE)+10]/10)*10]
+								ctr[, CHUNK:=cut(SITE, breaks=tmp, labels=tmp[-length(tmp)])]							
+								ctrmc	<- do.call('rbind',lapply(ctr[, unique(CHUNK)], function(chunk)
+												{
+													ctrch	<- subset(ctr, CHUNK==chunk)
+													ctrchm	<- gamlss(ANS_CALL~FRQ+GPS, data=ctrch, family=BI())				#as good as 'AGRpc+GPS+CNS_FRQr' in terms of FN, FP
+													ctrchmc	<- data.table(CHUNK=chunk, BETA0=coef(ctrchm)[1], BETA1=coef(ctrchm)[2], BETA2=coef(ctrchm)[3])					
+												}))
+							}))
+			#	deal with end of genome where little data is available: we estimated coefs for all sites > 1e4, now split up using CHUNK notation
+			ctr		<- haircut.load.training.data(indir, 10001)
+			tmp		<- seq(ctr[, min(SITE)-1],ctr[, max(SITE)+10],10)
+			tmp		<- as.data.table(expand.grid(CHUNK=as.character(tmp[tmp>10000]), BETA0=subset(ctrmc, CHUNK==10000)[, BETA0], BETA1=subset(ctrmc, CHUNK==10000)[, BETA1], BETA2=subset(ctrmc, CHUNK==10000)[, BETA2], stringsAsFactors=F))
+			ctrmc	<- rbind(ctrmc, tmp)
+			#	model predict function, so we save mem by not having to call 'predict'
+			model.150816a.predict<- function(frq, gps, b0, b1, b2)
+			{	
+				stopifnot(all(!is.na(frq)), all(!is.na(gps)))
+				b0[which(is.na(b0))]	<- 0
+				b1[which(is.na(b1))]	<- 0
+				b2[which(is.na(b2))]	<- 0
+				exp(b0+b1*frq+b2*gps)/(exp(b0+b1*frq+b2*gps)+1)	
+			}
+			#	calculate Sensitivity & Specificity on training data
+			ctrev	<- do.call('rbind', lapply(seq(1,10200,200), function(site)
+							{
+								cat('\nProcess',site,'\n')	
+								ctr		<- haircut.load.training.data(indir, site)	
+								tmp		<- seq(ctr[, min(SITE)-1],ctr[, max(SITE)+10],10)							
+								ctr[, CHUNK:=cut(SITE, breaks=tmp, labels=tmp[-length(tmp)])]
+								ctrp	<- merge(ctr, ctrmc, by='CHUNK')
+								ctrp[, PR_CALL:=model.150816a.predict(FRQ, GPS, BETA0, BETA1, BETA2)]														
+								setkey(ctrp, CHUNK)
+								if(0)
+								{
+									ctrev	<- as.data.table(expand.grid(THR= seq(0.05,0.95,0.01), CHUNK= as.character(ctrp[, unique(CHUNK)]), stringsAsFactors=FALSE))
+									ctrev	<- ctrev[, {																																
+												tmp	<- ctrp[CHUNK,][,table(ANS_CALL, factor(PR_CALL>=THR, levels=c('TRUE','FALSE'), labels=c('TRUE','FALSE')))]
+												list(TP= tmp['1','TRUE'], FP= tmp['0','TRUE'], FN= tmp['1','FALSE'], TN= tmp['0','FALSE'] )					
+											}, by=c('CHUNK','THR')]
+									ctrev	<- merge(ctrev, ctrev[, list(SENS= TP/(TP+FN), SPEC=TN/(TN+FP), FDR=FP/(FP+TP), FOR=FN/(FN+TN)), by=c('CHUNK','THR')], by=c('CHUNK','THR'))
+									
+								}
+								if(1)
+								{
+									ctrev	<- as.data.table(expand.grid(THR= c(seq(2,10,1), seq(15,30,5)), CHUNK= as.character(ctrp[, unique(CHUNK)]), stringsAsFactors=FALSE))
+									ctrev	<- ctrev[, {
+												ctrp[, CNS_PR_CALL:=CNS_FRQ-THR*CNS_FRQ_STD]
+												set(ctrp, NULL, 'CNS_PR_CALL', ctrp[,model.150816a.predict(CNS_PR_CALL, CNS_GPS, BETA0, BETA1, BETA2)])										
+												tmp	<- ctrp[CHUNK,][,table(ANS_CALL, factor(PR_CALL>=CNS_PR_CALL, levels=c('TRUE','FALSE'), labels=c('TRUE','FALSE')))]
+												list(TP= tmp['1','TRUE'], FP= tmp['0','TRUE'], FN= tmp['1','FALSE'], TN= tmp['0','FALSE'] )					
+											}, by=c('CHUNK','THR')]
+									ctrev	<- merge(ctrev, ctrev[, list(SENS= TP/(TP+FN), SPEC=TN/(TN+FP), FDR=FP/(FP+TP), FOR=FN/(FN+TN)), by=c('CHUNK','THR')], by=c('CHUNK','THR'))								
+								}
+								#	plot Sensitivity & Specificity
+								ggplot(melt(ctrev, id.vars=c('CHUNK','THR'), measure.vars=c('SENS','SPEC','FDR','FOR')), aes(x=THR, y=100*value, colour=CHUNK)) +
+										scale_x_reverse() +
+										geom_line() + labs(x='standard deviations of consensus call prob\nPR_CALL_CNT >= PR_CALL_CNS-x*std(PR_CALL_CNS)',y='%', colour='site\n(base relative to HXB2)') +
+										theme_bw() + theme(legend.position='bottom') + facet_wrap(~variable, ncol=2, scales='free') +									
+										guides(col = guide_legend(ncol=5, byrow=TRUE)) 
+								ggsave(file=paste(outdir,'/model.150816a_SensSpec_SITE',site,'.pdf',sep=''), w=9, h=9)
+								#
+								ctrev							
+							}))		
+			set(ctrev, NULL, 'CHUNK', ctrev[, as.numeric(CHUNK)])			
+			save(ctrmc, ctrev, model.150816a.predict, file=outfile)
+		}
+	}
 	list(coef=ctrmc, predict=model.150816a.predict)
 }
 ##--------------------------------------------------------------------------------------------------------
