@@ -16,3 +16,4 @@ Imports:
 Description: NA
 License: NA
 LazyLoad: NA
+LazyData: yes
