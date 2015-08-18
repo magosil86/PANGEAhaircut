@@ -40,13 +40,12 @@ cmd.various<- function(prog= PR.VARIOUS)
 	cmd
 }
 ##--------------------------------------------------------------------------------------------------------
-##	command line generator for 'prog.HPTN071.input.parser.v4'
-##	olli originally written 16-08-2015
+##	command line generator for 'haircut.call.contigs.Rscript'
 ##--------------------------------------------------------------------------------------------------------
 #' @export
 cmd.haircut.call<- function(indir.st, indir.al, outdir, mfile=NA, trainfile=NA, batch.n=NA, batch.id=NA, prog=PR.HAIRCUT.CALL )	
 {
-	cmd<- "#######################################################
+	cmd<- "\n#######################################################
 # start: run haircutprog.get.call.for.PNG_ID
 #######################################################"
 	cmd		<- paste(cmd, paste("\necho \'run ",prog,"\'\n",sep=''))
@@ -57,7 +56,7 @@ cmd.haircut.call<- function(indir.st, indir.al, outdir, mfile=NA, trainfile=NA, 
 		cmd	<- paste(cmd, ' -trainfile=',trainfile, sep='')
 	if(!is.na(batch.n) & !is.na(batch.id))
 		cmd	<- paste(cmd, ' -batch.n=',batch.n, ' -batch.id=',batch.id, sep='')
-	cmd		<- paste('\n',cmd,paste("echo \'end ",prog,"\'\n",sep=''))
+	cmd		<- paste('\n',cmd,paste("\necho \'end ",prog,"\'\n",sep=''))
 	cmd		<- paste(cmd,"#######################################################
 # end: run haircutprog.get.call.for.PNG_ID
 #######################################################\n",sep='')

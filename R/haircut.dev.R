@@ -355,9 +355,15 @@ prog.haircut.150806<- function()
 		par		<- c('FRQx.quantile'=NA, 'FRQx.thr'=NA, 'CNS_FRQ.window'=200, 'CNS_AGR.window'=200, 'GPS.window'=200)
 		haircutwrap.get.cut.statistics.150815(indir, par, outdir=outdir)
 	}
+	if(0)
+	{
+		indir.st	<- paste(DATA,'contigs_150408_wref_cutstat',sep='/')
+		indir.al	<- paste(DATA,'contigs_150408_wref',sep='/')
+		outdir		<- paste(DATA,'contigs_150408_model150816a',sep='/')
+		cmd			<- cmd.haircut.call(indir.st, indir.al, outdir)		
+	}
 	if(1)
 	{
-		mfile		<- paste(DATA,'model_150816a.R',sep='/')
 		indir.st	<- paste(DATA,'contigs_150408_wref_cutstat',sep='/')
 		indir.al	<- paste(DATA,'contigs_150408_wref',sep='/')
 		outdir		<- paste(DATA,'contigs_150408_model150816a',sep='/')
@@ -369,7 +375,7 @@ prog.haircut.150806<- function()
 		tmp			<- tmp[, max(BATCH)]
 		for(batch.id in seq.int(1,tmp))
 		{			
-			cmd			<- cmd.haircut.call(indir.st, indir.al, outdir, mfile, trainfile=trainfile, batch.n=batch.n, batch.id=batch.id, prog=PR.HAIRCUT.CALL )
+			cmd			<- cmd.haircut.call(indir.st, indir.al, outdir, trainfile=trainfile, batch.n=batch.n, batch.id=batch.id)
 			cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=4, hpc.mem="5000mb")
 			cat(cmd)		
 			outdir		<- paste(DATA,"tmp",sep='/')
