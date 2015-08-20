@@ -22,7 +22,7 @@ If cut/raw contigs correspond to each other, only one of both is returned.
 	
 #DATA		<- SET THIS DIRECTORY
 indir		<- paste(DATA, 'contigs_150408_wref', sep='/' )
-outdir		<- paste(DATA, 'contigs_150408_wref_cutstat', sep='/' )		
+outdir		<- paste(DATA, 'contigs_150408_model150816a', sep='/' )		
 batch.n		<- 200
 tmp			<- data.table(FILE=list.files(indir, pattern='fasta$', recursive=T))
 tmp[, BATCH:= ceiling(seq_len(nrow(tmp))/batch.n)]

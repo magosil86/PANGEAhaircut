@@ -327,11 +327,7 @@ dev.haircut<- function()
 	}
 }
 ##--------------------------------------------------------------------------------------------------------
-##	HAIRCUT program, version 15086 to: 
-##	- align contigs to references
-##	- calculate and save haircut statistics
-##--------------------------------------------------------------------------------------------------------
-prog.haircut.150806<- function()
+pipeline.various<- function()
 {
 	if(1)
 	{		
@@ -351,6 +347,14 @@ prog.haircut.150806<- function()
 			cmd.hpccaller(outdir, outfile, cmd)	
 		}
 	}
+}
+##--------------------------------------------------------------------------------------------------------
+##	HAIRCUT program, version 15086 to: 
+##	- align contigs to references
+##	- calculate and save haircut statistics
+##--------------------------------------------------------------------------------------------------------
+prog.haircut.150806<- function()
+{	
 	if(0)
 	{
 		indir		<- paste(DATA, 'contigs_150408_wref', sep='/' )
