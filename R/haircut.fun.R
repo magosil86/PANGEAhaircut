@@ -11,14 +11,14 @@
 haircutwrap.get.call.for.PNG_ID<- function(indir.st,indir.al,outdir,ctrmc,predict.fun,par,ctrain=NULL,batch.n=NA,batch.id=NA)
 {
 	infiles	<- data.table(INFILE=list.files(indir.st, pattern='\\.R$', recursive=T))
-	infiles[, PNG_ID:= gsub('_wRefs.*','',gsub('_cut|_raw','',INFILE))]
-	infiles[, BLASTnCUT:= regmatches(INFILE,regexpr('cut|raw',INFILE))]
-	set(infiles, NULL, 'BLASTnCUT', infiles[, factor(BLASTnCUT, levels=c('cut','raw'), labels=c('Y','N'))])
+	infiles[, PNG_ID:= gsub('_wRefs.*','',INFILE)]
+	#infiles[, BLASTnCUT:= regmatches(INFILE,regexpr('cut|raw',INFILE))]
+	#set(infiles, NULL, 'BLASTnCUT', infiles[, factor(BLASTnCUT, levels=c('cut','raw'), labels=c('Y','N'))])
 	alfiles <- data.table(ALFILE=list.files(indir.al, pattern='\\.fasta$', recursive=T))
-	alfiles[, PNG_ID:= gsub('_wRefs.*','',gsub('_cut|_raw','',basename(ALFILE)))]
-	alfiles[, BLASTnCUT:= regmatches(basename(ALFILE),regexpr('cut|raw',basename(ALFILE)))]
-	set(alfiles, NULL, 'BLASTnCUT', alfiles[, factor(BLASTnCUT, levels=c('cut','raw'), labels=c('Y','N'))])
-	infiles	<- merge(infiles, alfiles, by=c('PNG_ID','BLASTnCUT'))
+	alfiles[, PNG_ID:= gsub('_wRefs.*','',ALFILE)]
+	#alfiles[, BLASTnCUT:= regmatches(basename(ALFILE),regexpr('cut|raw',basename(ALFILE)))]
+	#set(alfiles, NULL, 'BLASTnCUT', alfiles[, factor(BLASTnCUT, levels=c('cut','raw'), labels=c('Y','N'))])
+	infiles	<- merge(infiles, alfiles, by='PNG_ID')
 	if(!is.na(batch.n) & !is.na(batch.id))
 	{
 		infiles[, BATCH:= ceiling(seq_len(nrow(infiles))/batch.n)]
@@ -35,7 +35,7 @@ haircutwrap.get.call.for.PNG_ID<- function(indir.st,indir.al,outdir,ctrmc,predic
 						{
 							if(0)	#devel
 							{
-								#PNG_ID<- png_id	<- '15172_1_32'
+								PNG_ID<- png_id	<- '15172_1_32'
 								#PNG_ID<- png_id	<- '12559_1_11'
 								#PNG_ID<- png_id	<- '14728_1_84'
 								#PNG_ID<- png_id	<- '14938_1_10'
@@ -52,14 +52,13 @@ haircutwrap.get.call.for.PNG_ID<- function(indir.st,indir.al,outdir,ctrmc,predic
 								#PNG_ID<- png_id	<- '14760_1_1'
 								#PNG_ID<- png_id	<- '15034_1_75'
 								#PNG_ID<- png_id	<- '14944_1_17'
-								PNG_ID<- png_id	<- '15065_1_24'
+								#PNG_ID<- png_id	<- '15065_1_24'
 								files	<- subset(infiles, PNG_ID==png_id)[, INFILE]
-								alfiles	<- subset(infiles, PNG_ID==png_id)[, ALFILE]
-								bc		<- subset(infiles, PNG_ID==png_id)[, BLASTnCUT]
+								alfiles	<- subset(infiles, PNG_ID==png_id)[, ALFILE]								
 								tmp		<- haircut.get.call.for.PNG_ID(indir.st, indir.al, png_id, files, alfiles, bc, par, ctrmc, predict.fun)
 							}
 							if(1)
-								tmp		<- haircut.get.call.for.PNG_ID(indir.st, indir.al, PNG_ID, INFILE, ALFILE, BLASTnCUT, par, ctrmc, predict.fun)							
+								tmp		<- haircut.get.call.for.PNG_ID(indir.st, indir.al, PNG_ID, INFILE, ALFILE, par, ctrmc, predict.fun)							
 						}, 
 						warning=function(w)
 						{ 
@@ -131,39 +130,27 @@ haircutwrap.get.call.for.PNG_ID<- function(indir.st,indir.al,outdir,ctrmc,predic
 ##		1)	do not return duplicate contigs (ie cut and raw, if both are to be kept)
 ##		2)	do not return raw contigs if cut exists and if raw extends into LTR
 ##--------------------------------------------------------------------------------------------------------
-haircut.get.call.for.PNG_ID<- function(indir.st, indir.al, png_id, files, alfiles, bc, par, ctrmc, predict.fun)	
+haircut.get.call.for.PNG_ID<- function(indir.st, indir.al, png_id, files, alfiles, par, ctrmc, predict.fun)	
 {
 	#	load covariates
-	cnsc.df	<- do.call('rbind',lapply(files, function(x)
-					{
-						load( paste(indir.st, '/', x, sep='') )
-						tmp	<- subset(cnsc.df, TAXON=='consensus', c(SITE, FRQ, FRQ_STD, GPS))
-						setnames(tmp, c('FRQ','FRQ_STD','GPS'), c('CNS_FRQ','CNS_FRQ_STD','CNS_GPS'))
-						merge(subset(cnsc.df, TAXON!='consensus'), tmp, by='SITE')
-					})) 
+	stopifnot(length(files)==1, length(alfiles)==1)
+	load( paste(indir.st, '/', files, sep='') )
+	tmp		<- subset(cnsc.df, TAXON=='consensus', c(SITE, FRQ, FRQ_STD, GPS))
+	setnames(tmp, c('FRQ','FRQ_STD','GPS'), c('CNS_FRQ','CNS_FRQ_STD','CNS_GPS'))
+	cnsc.df	<- merge(subset(cnsc.df, TAXON!='consensus'), tmp, by='SITE')					
 	#	load alignment	and cut LTR and anything that extends past references
-	crs		<- lapply(alfiles, function(x)
-			{
-				cr	<- read.dna(file=paste(indir.al,x,sep='/'), format='fasta')
-				cr	<- cr[, seq.int(haircut.find.nonLTRstart(cr), ncol(cr))]
-				cr[, seq.int(1, haircut.find.lastRefSite(cr))]																
-			})
-	names(crs)	<- bc
-	#
-	if( diff(sapply(crs, ncol))>par['PRCALL.cutrawgrace']/2 )
-		warning('Found large difference in alignment length for cut/raw contigs with PNG_ID ',PNG_ID,': it may be that identical/subset contigs are not correctly identified. Check manually.')
+	cr		<- read.dna(file=paste(indir.al,alfiles,sep='/'), format='fasta')
+	cr		<- cr[, seq.int(haircut.find.nonLTRstart(cr), ncol(cr))]
+	cr		<- cr[, seq.int(1, haircut.find.lastRefSite(cr))]
 	#	get contig table
-	tx		<- do.call('rbind',lapply(seq_along(crs), function(i)
-					{
-						tmp		<- rownames(crs[[i]])[grepl(png_id,rownames(crs[[i]]))]						
-						data.table(	TAXON=tmp, 
-								BLASTnCUT= bc[i], 
-								FIRST= apply( as.character(crs[[i]][tmp,,drop=FALSE]), 1, function(x) which(x!='-')[1] ),
-								LAST= ncol(crs[[i]])-apply( as.character(crs[[i]][tmp,,drop=FALSE]), 1, function(x) which(rev(x)!='-')[1] ) + 1L,
-								CRS_ID=i)
-					}))	
+	tmp		<- rownames(cr)[grepl(png_id,rownames(cr))]						
+	tx		<- data.table(		TAXON=tmp, 
+								BLASTnCUT= factor(grepl('cut',tmp), levels=c(TRUE,FALSE),labels=c('Y','N')), 
+								FIRST= apply( as.character(cr[tmp,,drop=FALSE]), 1, function(x) which(x!='-')[1] ),
+								LAST= ncol(cr)-apply( as.character(cr[tmp,,drop=FALSE]), 1, function(x) which(rev(x)!='-')[1] ) + 1L
+								)	
 	tx		<- subset(tx, !is.na(FIRST) & !is.na(LAST))	#some contigs may just be in LTR
-	tx[, CNTG:=tx[, gsub(paste(png_id,'.',sep=''),'',substring(TAXON, regexpr(png_id, TAXON)))]]
+	tx[, CNTG:=tx[, gsub('_cut','',gsub(paste(png_id,'.',sep=''),'',substring(TAXON, regexpr(png_id, TAXON))))]]
 	tx[, OCNTG:= tx[, sapply(strsplit(CNTG,'.',fixed=T),'[[',1)]]
 	tx[, CCNTG:= NA_character_]		
 	tmp		<- tx[, which(grepl('.',CNTG,fixed=T))]
@@ -182,9 +169,9 @@ haircut.get.call.for.PNG_ID<- function(indir.st, indir.al, png_id, files, alfile
 	tmp		<- seq(cnsc.df[, floor(min(SITE)/10)*10-10],cnsc.df[, max(SITE)+10],10)	
 	cnsc.df[, CHUNK:=cut(SITE, breaks=tmp, labels=tmp[-length(tmp)])]
 	cnsc.df	<- merge(cnsc.df, ctrmc, by='CHUNK', all.x=TRUE)
-	if(cnsc.df[, !any(is.na(BETA0))])
+	if(cnsc.df[, any(is.na(BETA0))])
 	{
-		warning('Found NA BETA0 for PNG_ID',PNG_ID,': likely because one cut/raw contig alignment is much longer than expected. Suggests that the site-specific call probability model may not match to the sites in the alignment. Check manually. ')
+		warning('Found NA BETA0 for PNG_ID ',PNG_ID,': likely because the cut/raw contig alignment is much longer than expected. Suggests that the site-specific call probability model may not match to the sites in the alignment. Check manually. ')
 		tmp	<- cnsc.df[, which(SITE==subset(cnsc.df, !is.na(BETA0))[, max(SITE)])[1]]
 		tmp2<- cnsc.df[, which(is.na(BETA0))]
 		set(cnsc.df, tmp2, 'BETA0', cnsc.df[tmp, BETA0])
@@ -341,8 +328,6 @@ haircutwrap.get.cut.statistics<- function(indir, par, outdir=indir, batch.n=NA, 
 	#	determine statistics for each contig after LTR
 	infiles		<- data.table(FILE=list.files(indir, pattern='fasta$', recursive=T))
 	infiles[, PNG_ID:= gsub('_wRefs\\.fasta','',gsub('_cut|_raw','',FILE))]
-	#infiles[, BLASTnCUT:= regmatches(FILE,regexpr('cut|raw',FILE))]
-	#set(infiles, NULL, 'BLASTnCUT', infiles[, factor(BLASTnCUT, levels=c('cut','raw'), labels=c('Y','N'))])
 	if(!is.na(batch.n) & !is.na(batch.id))
 	{
 		infiles[, BATCH:= ceiling(seq_len(nrow(infiles))/batch.n)]
@@ -361,7 +346,7 @@ haircutwrap.get.cut.statistics<- function(indir, par, outdir=indir, batch.n=NA, 
 	cat(paste('\nFound processed files, n=', infiles[, length(which(DONE))]))
 	infiles		<- subset(infiles, !DONE)
 	#
-	#	infiles[, which(grepl('12559_1_11',FILE))]	fls<- 4
+	#	infiles[, which(grepl('15172_1_32',FILE))]	fls<- 1431
 	#	process files
 	for(fls in infiles[, seq_along(FILE)])
 	{
@@ -490,9 +475,8 @@ haircut.find.lastRefSite<- function(cr)
 	
 	ans				<- seq.find.pos.of.pattern(cr, pattern='t-*t-*t-*t-*a-*g-*t-*c-*a-*g-*t-*g-*t-*g-*g-*a-*a-*a-*a-*t-*c-*t-*c-*t-*a-*g-*c-*a', row.name='B.FR.83.HXB2_LA')
 	stopifnot(length(ans)==1, ans>0)
-	as.integer(ans+attr(ans,'match.length'))
+	as.integer(ans+attr(ans,'match.length')-1L)
 }
-
 ##--------------------------------------------------------------------------------------------------------
 ##	determine the base frequencies in the reference alignment
 ##--------------------------------------------------------------------------------------------------------

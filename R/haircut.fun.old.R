@@ -66,6 +66,202 @@ haircut.get.call.for.PNG_ID.150811<- function(indir.st, indir.al, png_id, files,
 	
 	list(crs=crs, cnsc.df=cnsc.df)
 }
+haircut.get.call.for.PNG_ID.150816<- function(indir.st, indir.al, png_id, files, alfiles, bc, par, ctrmc, predict.fun)	
+{
+	#	load covariates
+	cnsc.df	<- do.call('rbind',lapply(files, function(x)
+					{
+						load( paste(indir.st, '/', x, sep='') )
+						tmp	<- subset(cnsc.df, TAXON=='consensus', c(SITE, FRQ, FRQ_STD, GPS))
+						setnames(tmp, c('FRQ','FRQ_STD','GPS'), c('CNS_FRQ','CNS_FRQ_STD','CNS_GPS'))
+						merge(subset(cnsc.df, TAXON!='consensus'), tmp, by='SITE')
+					})) 
+	#	load alignment	and cut LTR and anything that extends past references
+	crs		<- lapply(alfiles, function(x)
+			{
+				cr	<- read.dna(file=paste(indir.al,x,sep='/'), format='fasta')
+				cr	<- cr[, seq.int(haircut.find.nonLTRstart(cr), ncol(cr))]
+				cr[, seq.int(1, haircut.find.lastRefSite(cr))]																
+			})
+	names(crs)	<- bc
+	#
+	if( diff(sapply(crs, ncol))>par['PRCALL.cutrawgrace']/2 )
+		warning('Found large difference in alignment length for cut/raw contigs with PNG_ID ',PNG_ID,': it may be that identical/subset contigs are not correctly identified. Check manually.')
+	#	get contig table
+	tx		<- do.call('rbind',lapply(seq_along(crs), function(i)
+					{
+						tmp		<- rownames(crs[[i]])[grepl(png_id,rownames(crs[[i]]))]						
+						data.table(	TAXON=tmp, 
+								BLASTnCUT= bc[i], 
+								FIRST= apply( as.character(crs[[i]][tmp,,drop=FALSE]), 1, function(x) which(x!='-')[1] ),
+								LAST= ncol(crs[[i]])-apply( as.character(crs[[i]][tmp,,drop=FALSE]), 1, function(x) which(rev(x)!='-')[1] ) + 1L,
+								CRS_ID=i)
+					}))	
+	tx		<- subset(tx, !is.na(FIRST) & !is.na(LAST))	#some contigs may just be in LTR
+	tx[, CNTG:=tx[, gsub(paste(png_id,'.',sep=''),'',substring(TAXON, regexpr(png_id, TAXON)))]]
+	tx[, OCNTG:= tx[, sapply(strsplit(CNTG,'.',fixed=T),'[[',1)]]
+	tx[, CCNTG:= NA_character_]		
+	tmp		<- tx[, which(grepl('.',CNTG,fixed=T))]
+	if(length(tmp))
+		set(tx, tmp, 'CCNTG', tx[tmp, sapply(strsplit(CNTG,'.',fixed=T),'[[',2)])	
+	tmp		<- subset(tx, BLASTnCUT=='Y' & !is.na(CCNTG))[, list(CCNTGn=length(CCNTG)), by='OCNTG']
+	tmp		<- subset(tmp, CCNTGn==1)[, OCNTG]	#check for cut contigs that should be present in multiple cuts by naming scheme, but after LTR removal there is only one cut
+	if(length(tmp))
+	{
+		cat('\nFound lone cuts for which multiple cuts are expected by naming scheme, n=', length(tmp))
+		tmp	<- tx[, which(BLASTnCUT=='Y' & OCNTG%in%tmp)]
+		set(tx, tmp, 'CCNTG', NA_character_)
+		set(tx, tmp, 'CNTG', tx[tmp, OCNTG])
+	}
+	#	calculate PR_CALL of contig and of consensus
+	tmp		<- seq(cnsc.df[, floor(min(SITE)/10)*10-10],cnsc.df[, max(SITE)+10],10)	
+	cnsc.df[, CHUNK:=cut(SITE, breaks=tmp, labels=tmp[-length(tmp)])]
+	cnsc.df	<- merge(cnsc.df, ctrmc, by='CHUNK', all.x=TRUE)
+	if(cnsc.df[, !any(is.na(BETA0))])
+	{
+		warning('Found NA BETA0 for PNG_ID',PNG_ID,': likely because one cut/raw contig alignment is much longer than expected. Suggests that the site-specific call probability model may not match to the sites in the alignment. Check manually. ')
+		tmp	<- cnsc.df[, which(SITE==subset(cnsc.df, !is.na(BETA0))[, max(SITE)])[1]]
+		tmp2<- cnsc.df[, which(is.na(BETA0))]
+		set(cnsc.df, tmp2, 'BETA0', cnsc.df[tmp, BETA0])
+		set(cnsc.df, tmp2, 'BETA1', cnsc.df[tmp, BETA1])
+		set(cnsc.df, tmp2, 'BETA2', cnsc.df[tmp, BETA2])
+	}
+	cnsc.df[, PR_CALL:= predict.fun(FRQ, GPS, BETA0, BETA1, BETA2)]
+	cnsc.df[, CNS_PR_CALL:= CNS_FRQ-par['PRCALL.thrstd']*CNS_FRQ_STD]
+	set(cnsc.df, cnsc.df[, which(CNS_PR_CALL<0)], 'CNS_PR_CALL', 0)
+	set(cnsc.df, NULL, 'CNS_PR_CALL', cnsc.df[,predict.fun(CNS_PR_CALL, CNS_GPS, BETA0, BETA1, BETA2)])
+	set(cnsc.df, cnsc.df[, which(CNS_PR_CALL>par['PRCALL.thrmax'])], 'CNS_PR_CALL', par['PRCALL.thrmax']) 
+	#	call if call prob of contig is not too low in relation to the call prob of the consensus 
+	cnsc.df[, CALL:= as.integer(PR_CALL>=CNS_PR_CALL)]	
+	if(0)
+	{
+		ggplot(subset(cnsc.df, BLASTnCUT=='Y'), aes(x=SITE)) + facet_wrap(~TAXON, ncol=1) +
+				geom_line(aes(y=PR_CALL), colour='black') +
+				geom_line(aes(y=CNS_FRQ), colour='red') +
+				geom_line(aes(y=CNS_PR_CALL), colour='blue') +
+				geom_line(aes(y=CNS_GPS), colour='orange') +
+				geom_line(aes(y=FRQ), colour='green') +
+				geom_line(aes(y=GPS), colour='DarkGreen')
+	} 	
+	#	determine predicted sites
+	cnsc.1s	<- cnsc.df[, {
+				z	<- gsub('0*$','',paste(CALL,collapse=''))
+				#print(TAXON)
+				#print(z)
+				z	<- gregexpr('1+',z)[[1]]	
+				list(CALL_ID= seq_along(z), CALL_POS=as.integer(z+min(SITE)-1L), CALL_LEN=attr(z, 'match.length'))
+			}, by=c('PNG_ID','TAXON','BLASTnCUT')]
+	cnsc.1s[, CALL_LAST:= CALL_POS+CALL_LEN-1L]
+	cnsc.1s	<- subset(cnsc.1s, CALL_LEN>0)
+	#	fill internal predicted gaps		
+	if(!nrow(cnsc.1s))
+		warning('Could not determine any calls for either the raw or cut contigs with PNG_ID ',PNG_ID,'. Check manually.')
+	if((!is.na(par['PRCALL.rmintrnlgpsblw'] | !is.na(par['PRCALL.rmintrnlgpsend']))) && nrow(cnsc.1s))
+	{
+		cnsc.g	<- cnsc.1s[, {
+					if(length(CALL_ID)==1)
+						ans	<- NA_integer_
+					if(length(CALL_ID)>1)
+						ans	<- CALL_POS[seq.int(2,length(CALL_POS))]-CALL_LAST[seq.int(1,length(CALL_LAST)-1)]-1L
+					list(CALL_LAST=CALL_LAST[seq.int(1,length(CALL_LAST)-1)], GAP_LEN= ans)
+				}, by=c('TAXON','BLASTnCUT')]
+		cnsc.g	<- merge(cnsc.1s, cnsc.g,  by=c('TAXON','BLASTnCUT','CALL_LAST'), all.x=1)
+		if(!is.na(par['PRCALL.rmintrnlgpsblw']))
+			tmp	<- cnsc.g[, which(GAP_LEN<par['PRCALL.rmintrnlgpsblw'])]
+		if(!is.na(par['PRCALL.rmintrnlgpsblw']))
+			tmp	<- union(tmp, cnsc.g[, which(CALL_LAST>par['PRCALL.rmintrnlgpsend'] & !is.na(GAP_LEN))])		
+		for(i in tmp)	#	add ith called region to next call region
+		{
+			tmp2	<- cnsc.df[, which(TAXON==cnsc.g$TAXON[i] & BLASTnCUT==cnsc.g$BLASTnCUT[i] & SITE>cnsc.g$CALL_LAST[i] & SITE<=cnsc.g$CALL_LAST[i]+cnsc.g$GAP_LEN[i])]
+			stopifnot( cnsc.df[tmp2,all(CALL==0)])
+			cat('\nFound internal predicted gap and set to CALL=1, taxon=',cnsc.g[i,TAXON],', cut=',cnsc.g[i,as.character(BLASTnCUT)],', pos=',cnsc.g[i,CALL_LAST+1L],', len=', length(tmp2))
+			set(cnsc.df, tmp2, 'CALL', 1L)
+			set(cnsc.g, i+1L, 'CALL_POS', cnsc.g[i,CALL_POS])
+			set(cnsc.g, i+1L, 'CALL_LEN', cnsc.g[i+1L,CALL_LEN]+cnsc.g[i,CALL_LEN]+cnsc.g[i,GAP_LEN])
+			set(cnsc.g, i, 'CALL_ID', NA_integer_)
+		}
+		cnsc.1s		<- subset(cnsc.g, !is.na(CALL_ID))
+	}
+	#	check if called contig has gaps of CALL=='0': if yes, return last non-gap before first CALL=='0
+	if(!is.na(par['PRCALL.cutprdcthair']) && nrow(cnsc.1s))
+	{
+		setkey(cnsc.1s, TAXON, BLASTnCUT, CALL_POS)
+		tmp		<- cnsc.1s[, which(CALL_LEN<par['PRCALL.cutprdcthair'])]	
+		for(i in tmp)	#keep raw
+		{
+			if( (i-1)>0	  &&  cnsc.1s[i-1,TAXON]==cnsc.1s[i,TAXON] &&  cnsc.1s[i-1,BLASTnCUT]==cnsc.1s[i,BLASTnCUT]  &&  cnsc.1s[i-1,GAP_LEN]>2*par['PRCALL.cutprdcthair'])
+			{
+				cat('\nFound predicted extra hair of length <',par['PRCALL.cutprdcthair'],'delete, n=',cnsc.1s$CALL_LEN[i])
+				set(cnsc.df, cnsc.df[, which(TAXON==cnsc.1s$TAXON[i] & BLASTnCUT==cnsc.1s$BLASTnCUT[i] & SITE>=cnsc.1s$CALL_POS[i] & SITE<=cnsc.1s$CALL_LAST[i])], 'CALL', 0L)
+				set(cnsc.1s, i, 'CALL_ID', NA_integer_)
+				set(cnsc.1s, i, 'GAP_LEN', cnsc.1s[i,GAP_LEN]+cnsc.1s[i-1,GAP_LEN]+cnsc.1s[i,CALL_LEN])
+			}				
+		}
+		cnsc.1s	<- subset(cnsc.1s, !is.na(CALL_ID))								
+	}
+	#	check if all called chunks in cut and raw contigs correspond to each other
+	if(!is.na(par['PRCALL.cutrawgrace']) && nrow(cnsc.1s))
+	{
+		cnsc.1s	<- merge(cnsc.1s, tx, by=c('TAXON','BLASTnCUT'))
+		tmp		<- subset(cnsc.1s, BLASTnCUT=='Y', select=c(OCNTG, TAXON, CALL_ID, CALL_POS, CALL_LEN ))
+		setnames(tmp, c('TAXON','CALL_ID','CALL_POS','CALL_LEN'),c('TAXON_CUT','CALL_ID_CUT','CALL_POS_CUT','CALL_LEN_CUT'))
+		tmp		<- merge(subset(cnsc.1s, BLASTnCUT=='N'), tmp, by='OCNTG', allow.cartesian=TRUE)
+		tmp		<- subset(tmp, abs(CALL_POS-CALL_POS_CUT)<par['PRCALL.cutrawgrace'] )	
+		#	of the corresponding calls, keep the longer one 
+		#	dont extend shorter for now as alignments may not match
+		tmp2	<- subset(tmp, CALL_LEN>CALL_LEN_CUT)
+		for(i in seq_len(nrow(tmp2)))	#keep raw
+		{			
+			cat('\nkeep only raw:', tmp2[i,TAXON])
+			z	<- cnsc.df[, which( TAXON==tmp2$TAXON_CUT[i] & BLASTnCUT=='Y' & SITE>=tmp2$CALL_POS_CUT[i] & SITE<(tmp2$CALL_POS_CUT[i]+tmp2$CALL_LEN_CUT[i]))]
+			stopifnot( cnsc.df[z,all(CALL==1)])
+			set(cnsc.df, z, 'CALL', 0L)
+			set(cnsc.1s, cnsc.1s[, which(TAXON==tmp2$TAXON_CUT[i] & BLASTnCUT=='Y' & CALL_ID==tmp2$CALL_ID_CUT[i])],'CALL_ID',NA_integer_)
+		}
+		tmp2	<- subset(tmp, CALL_LEN<=CALL_LEN_CUT)
+		for(i in seq_len(nrow(tmp2)))	#keep cut
+		{	
+			cat('\nkeep only cut:', tmp2[i,TAXON_CUT])
+			z	<- cnsc.df[, which( TAXON==tmp2$TAXON[i] & BLASTnCUT=='N' & SITE>=tmp2$CALL_POS[i] & SITE<=tmp2$CALL_LAST[i])]
+			stopifnot( cnsc.df[z,all(CALL==1)])
+			set(cnsc.df, z, 'CALL', 0L)
+			set(cnsc.1s, cnsc.1s[, which(TAXON==tmp2$TAXON[i] & BLASTnCUT=='N' & CALL_ID==tmp2$CALL_ID[i])],'CALL_ID',NA_integer_)
+		}
+		cnsc.1s	<- subset(cnsc.1s, !is.na(CALL_ID))		
+	}
+	#	check that remaining contigs have sufficient length
+	if(!is.na(par['PRCALL.cutprdctcntg']) && nrow(cnsc.1s))
+	{		
+		tmp		<- cnsc.1s[, which(CALL_LEN<par['PRCALL.cutprdctcntg'])]	
+		set(cnsc.1s, tmp, 'CALL_ID', NA_integer_)
+		for(i in tmp)	#keep raw
+		{
+			cat('\nFound predicted contig of length <',par['PRCALL.cutprdctcntg'],'delete, n=',cnsc.1s$CALL_LEN[i])
+			set(cnsc.df, cnsc.df[, which( TAXON==cnsc.1s$TAXON[i] & BLASTnCUT==cnsc.1s$BLASTnCUT[i] & SITE>=cnsc.1s$CALL_POS[i] & SITE<=cnsc.1s$CALL_LAST[i])], 'CALL', 0L)
+		}										
+		cnsc.1s	<- subset(cnsc.1s, !is.na(CALL_ID))								
+	}
+	#	check there is no dust
+	tmp			<- subset(cnsc.df, CALL==1)[, list(CALL_N= length(CALL)), by=c('TAXON','BLASTnCUT')][, CALL_N]
+	if(length(tmp))
+		stopifnot(min(tmp)>40)
+	#	produce fasta output:
+	#	select cut and raw contigs with a call, then set all characters with CALL==0 to -
+	crs			<- lapply(crs, as.character)
+	tmp			<- subset(cnsc.df, BLASTnCUT=='N' & CALL==1 )[, unique(TAXON)]
+	tmp2		<- rownames(crs[['N']])[ !grepl(png_id,rownames(crs[['N']])) | rownames(crs[['N']])%in%tmp ] 
+	crs[['N']]	<- crs[['N']][tmp2,]
+	for(tx in tmp)
+		crs[['N']][tx, subset(cnsc.df, BLASTnCUT=='N' & TAXON==tx & CALL==0 & SITE<=ncol(crs[['N']]))[, SITE]]	<- '-'
+	
+	tmp			<- subset(cnsc.df, BLASTnCUT=='Y' & CALL==1 )[, unique(TAXON)]
+	tmp2		<- rownames(crs[['Y']])[ !grepl(png_id,rownames(crs[['Y']])) | rownames(crs[['Y']])%in%tmp ] 
+	crs[['Y']]	<- crs[['Y']][tmp2,]
+	for(tx in tmp)
+		crs[['Y']][tx, subset(cnsc.df, BLASTnCUT=='Y' & TAXON==tx & CALL==0 & SITE<=ncol(crs[['Y']]))[, SITE]]	<- '-'
+	crs			<- lapply(crs, as.DNAbin)			
+	list(crs=crs, cnsc.df=cnsc.df)
+}
 ##--------------------------------------------------------------------------------------------------------
 ##	predict Calls for contigs with same PANGEA ID, based on fitted model
 ##	update: 

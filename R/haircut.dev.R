@@ -102,9 +102,9 @@ dev.haircut<- function()
 	}
 	if(0)	#	call contigs on training data and plot
 	{		
-		mfile	<- '/Users/Oliver/Dropbox\ (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/model_150816a.R'
+		#mfile	<- '/Users/Oliver/Dropbox\ (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/model_150816a.R'
 		#	get model coefficients across the chunks
-		tmp						<- haircut.get.fitted.model.150816a(NULL, mfile)
+		tmp						<- haircut.get.fitted.model.150816a()
 		ctrmc					<- tmp$coef		
 		predict.fun				<- tmp$predict
 		#	get contigs that were used for training		
@@ -118,7 +118,7 @@ dev.haircut<- function()
 		outdir	<- '/Users/Oliver/Dropbox\ (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_150408_model150816a'
 		par		<- c(	'FRQx.quantile'=NA, 'FRQx.thr'=NA, 'CNS_FRQ.window'=200, 'CNS_AGR.window'=200, 'GPS.window'=200, 
 						'PRCALL.thrmax'=0.8, 'PRCALL.thrstd'=10, 'PRCALL.cutprdcthair'=100, 'PRCALL.cutrawgrace'=100, 'PRCALL.rmintrnlgpsblw'=100 ,'PRCALL.rmintrnlgpsend'=9700)
-		haircutwrap.get.call.for.PNG_ID(indir.st,indir.al,outdir,ctrmc,ctrev,predict.fun,txe,par,ctrain=ctrain)
+		haircutwrap.get.call.for.PNG_ID(indir.st,indir.al,outdir,ctrmc,ctrev,predict.fun,par,ctrain=ctrain)
 	}
 	if(0)	# evaluate training data
 	{	

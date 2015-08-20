@@ -9,7 +9,7 @@ if(any(args=='--args'))
 	args<- args[-(1:match("--args", args)) ]
 #	default args
 verbose			<- 1
-indir.st		<- NA
+indir			<- NA
 outdir			<- NA
 batch.n			<- NA
 batch.id		<- NA
