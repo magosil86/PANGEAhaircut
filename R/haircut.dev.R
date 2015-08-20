@@ -52,10 +52,17 @@ dev.haircut<- function()
 	if(0)
 	{
 		#	run mafft --add to get contigs+ref
-		indir	<- '/Users/Oliver/Dropbox\ (Infectious Disease)/PANGEA_data/contigs_150408'
-		outdir	<- '/Users/Oliver/Dropbox\ (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_150408_wref'
-		reffile	<- '/Users/Oliver/Dropbox\ (Infectious Disease)/PANGEA_data/HIV1_COM_2012_genome_DNA_WithExtraA1UG.fasta'
-		haircutwrap.align.contigs.with.ref(indir, reffile, outdir)
+		indir		<- '/Users/Oliver/Dropbox\ (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_150408_merged_unaligned'
+		outdir		<- '/Users/Oliver/Dropbox\ (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_150408_wref'
+		reffile		<- '/Users/Oliver/Dropbox\ (Infectious Disease)/PANGEA_data/HIV1_COM_2012_genome_DNA_WithExtraA1UG.fasta'
+		cmd			<- cmdwrap.align.contigs.with.ref(indir, reffile, outdir, batch.n=200, batch.id=2)
+		cmd			<- cmdwrap.align.contigs.with.ref(indir, reffile, outdir)
+		cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=4, hpc.mem="5000mb")
+		cat(cmd)		
+		outdir		<- paste(DATA,"tmp",sep='/')
+		outfile		<- paste("hrct",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.')
+		cmd.hpccaller(outdir, outfile, cmd)	
+		#haircutwrap.align.contigs.with.ref(indir, reffile, outdir)
 	}	
 	if(0)
 	{

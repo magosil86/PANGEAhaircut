@@ -328,38 +328,6 @@ haircut.get.call.for.PNG_ID<- function(indir.st, indir.al, png_id, files, alfile
 	list(crs=crs, cnsc.df=cnsc.df)
 }
 ##--------------------------------------------------------------------------------------------------------
-##	process all files in indir with 'haircut.align.contigs.with.ref'
-##--------------------------------------------------------------------------------------------------------
-#' @import data.table zoo plyr ape reshape2 ggplot2
-#' @export
-haircutwrap.align.contigs.with.ref<- function(indir, reffile, outdir)
-{
-	infiles	<- data.table(INFILE=list.files(indir, pattern='fasta$',recursive=T))
-	infiles	<- subset(infiles, !grepl('Curated', INFILE))
-	infiles[, OUTFILE:= gsub('hiv\\.fasta','raw_wRefs\\.fasta', gsub('hiv_cut','cut_wRefs',INFILE))]
-	set(infiles, NULL, 'OUTFILE', infiles[, basename(OUTFILE)])
-	invisible(infiles[, {
-						haircut.align.contigs.with.ref(paste(indir,'/',INFILE,sep=''), reffile, paste(outdir,'/',OUTFILE,sep=''))
-					}, by='INFILE'])
-	NULL
-}
-##--------------------------------------------------------------------------------------------------------
-##	call to MAFFT to align contigs with reference compendium
-##--------------------------------------------------------------------------------------------------------
-haircut.align.contigs.with.ref<- function(infile, reffile, outfile)
-{
-	#mafft --reorder --anysymbol --add new_sequences --auto input
-	tmp		<- c( 	gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',infile,fixed=T),fixed=T),fixed=T),
-					gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',reffile,fixed=T),fixed=T),fixed=T),
-					gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',outfile,fixed=T),fixed=T),fixed=T)
-					)
-	cmd		<- paste('mafft --anysymbol --add ',tmp[1],' --auto ',tmp[2],' > ',tmp[3], sep='')
-	cat('\ncalling')
-	cat(cmd)
-	system(cmd, ignore.stdout=TRUE, ignore.stderr=TRUE)	
-	NULL
-}
-##--------------------------------------------------------------------------------------------------------
 ##	process all files in indir with 'haircut.get.cut.statistics'
 ##--------------------------------------------------------------------------------------------------------
 #' @title Compute descriptive statistics that are used to calculate the call probability

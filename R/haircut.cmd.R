@@ -42,6 +42,51 @@ cmd.various<- function(prog= PR.VARIOUS)
 	cmd
 }
 ##--------------------------------------------------------------------------------------------------------
+##	process all files in indir with 'haircut.align.contigs.with.ref'
+##--------------------------------------------------------------------------------------------------------
+#' @title Align cut and raw contigs to set of references
+#' @import data.table zoo plyr ape reshape2 ggplot2
+#' @export
+#' @example example/ex.cmd.align.contigs.with.ref.R
+cmdwrap.align.contigs.with.ref<- function(indir, outdir, reffile=system.file(package="PANGEAhaircut", "HIV1_COM_2012_genome_DNA_WithExtraA1UG.fasta"), batch.n=NA, batch.id=NA)
+{
+	infiles	<- data.table(INFILE=list.files(indir, pattern='fasta$',recursive=T))
+	infiles	<- subset(infiles, !grepl('Curated', INFILE))
+	infiles[, OUTFILE:= gsub('\\.fasta','_wRefs\\.fasta', gsub('_hiv|_HIV','',basename(INFILE)))]
+	if(!is.na(batch.n) & !is.na(batch.id))
+	{
+		infiles[, BATCH:= ceiling(seq_len(nrow(infiles))/batch.n)]
+		infiles		<- subset(infiles, BATCH==batch.id)
+	}	
+	#INFILE<- '12559_1_1.fasta'
+	#OUTFILE<- '12559_1_1_wRefs.fasta'
+	#cat(cmd.align.contigs.with.ref(paste(indir,'/',INFILE,sep=''), reffile, paste(outdir,'/',OUTFILE,sep='')))
+	tmp		<- infiles[, {
+				list(CMD=cmd.align.contigs.with.ref(paste(indir,'/',INFILE,sep=''), reffile, paste(outdir,'/',OUTFILE,sep='')))
+			}, by='INFILE']
+	cmd		<- "\n#######################################################
+# start: run cmdwrap.align.contigs.with.ref
+#######################################################"
+	cmd		<- paste(cmd,paste(tmp$CMD, collapse='\n'),sep='\n')
+	cmd		<- paste(cmd,"\n#######################################################
+# end: run cmdwrap.align.contigs.with.ref
+#######################################################\n",sep='')
+	cmd
+}
+##--------------------------------------------------------------------------------------------------------
+##	call to MAFFT to align contigs with reference compendium
+##--------------------------------------------------------------------------------------------------------
+cmd.align.contigs.with.ref<- function(infile, reffile, outfile)
+{
+	#mafft --reorder --anysymbol --add new_sequences --auto input
+	tmp		<- c( 	gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',infile,fixed=T),fixed=T),fixed=T),
+			gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',reffile,fixed=T),fixed=T),fixed=T),
+			gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',outfile,fixed=T),fixed=T),fixed=T)
+	)
+	cmd		<- paste('mafft --anysymbol --add ',tmp[1],' --auto ',tmp[2],' > ',tmp[3], sep='')
+	cmd
+}
+##--------------------------------------------------------------------------------------------------------
 ##	command line generator for 'haircut.call.contigs.Rscript'
 ##--------------------------------------------------------------------------------------------------------
 #' @export
