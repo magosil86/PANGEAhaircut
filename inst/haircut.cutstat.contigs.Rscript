@@ -60,8 +60,7 @@ my.dumpframes<- function()
 }
 ###############################################################################
 #	set debugging
-if(DEBUG)	
-	options(error= my.dumpframes)	
+options(error= my.dumpframes)	
 ###############################################################################
 #	run script
 require(PANGEAhaircut)
