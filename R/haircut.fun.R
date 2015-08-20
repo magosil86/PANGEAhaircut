@@ -33,7 +33,7 @@ haircutwrap.get.call.for.PNG_ID<- function(indir.st,indir.al,outdir,ctrmc,predic
 				#	if this happens, set confidence scores to 0
 				if(0)	#devel
 				{
-					PNG_ID<- png_id	<- '12559_1_13'
+					PNG_ID<- png_id	<- '13548_1_11'
 					#PNG_ID<- png_id	<- '12559_1_11'
 					#PNG_ID<- png_id	<- '14728_1_84'
 					#PNG_ID<- png_id	<- '14938_1_10'
@@ -199,50 +199,53 @@ haircut.get.call.for.PNG_ID<- function(indir.st, indir.al, png_id, files, alfile
 	if(!nrow(cnsc.1s))
 		conf	<- 0
 	#	calculate gaps and consecutive chunks
-	tmp		<- cnsc.1s[, {
-				if(length(CALL_ID)==1)
-					ans	<- NA_integer_
-				if(length(CALL_ID)>1)
-					ans	<- CALL_POS[seq.int(2,length(CALL_POS))]-CALL_LAST[seq.int(1,length(CALL_LAST)-1)]-1L
-				list(CALL_LAST=CALL_LAST[seq.int(1,length(CALL_LAST)-1)], GAP_LEN= ans)
-			}, by=c('TAXON','BLASTnCUT')]
-	cnsc.1s	<- merge(cnsc.1s, tmp,  by=c('TAXON','BLASTnCUT','CALL_LAST'), all.x=1)
-	#calculate GAP_LEN_EFF
-	cnsc.1s[, GAP_LEN_EFF:=NA_real_]
-	tmp		<- cnsc.1s[, which(!is.na(GAP_LEN))]		
-	for(i in tmp)
+	if(nrow(cnsc.1s))
 	{
-		z	<- cnsc.df[, which(TAXON==cnsc.1s$TAXON[i] & SITE>cnsc.1s$CALL_LAST[i] & SITE<=(cnsc.1s$CALL_LAST[i]+cnsc.1s$GAP_LEN[i]))]
-		stopifnot(cnsc.df[z, ][, !any(CALL==1)])
-		set(cnsc.1s, i, 'GAP_LEN_EFF', cnsc.df[z, ][, sum(abs(CNS_PR_CALL-PR_CALL))])
+		tmp		<- cnsc.1s[, {
+					if(length(CALL_ID)==1)
+						ans	<- NA_integer_
+					if(length(CALL_ID)>1)
+						ans	<- CALL_POS[seq.int(2,length(CALL_POS))]-CALL_LAST[seq.int(1,length(CALL_LAST)-1)]-1L
+					list(CALL_LAST=CALL_LAST[seq.int(1,length(CALL_LAST)-1)], GAP_LEN= ans)
+				}, by=c('TAXON','BLASTnCUT')]
+		cnsc.1s	<- merge(cnsc.1s, tmp,  by=c('TAXON','BLASTnCUT','CALL_LAST'), all.x=1)
+		#calculate GAP_LEN_EFF
+		cnsc.1s[, GAP_LEN_EFF:=NA_real_]
+		tmp		<- cnsc.1s[, which(!is.na(GAP_LEN))]		
+		for(i in tmp)
+		{
+			z	<- cnsc.df[, which(TAXON==cnsc.1s$TAXON[i] & SITE>cnsc.1s$CALL_LAST[i] & SITE<=(cnsc.1s$CALL_LAST[i]+cnsc.1s$GAP_LEN[i]))]
+			stopifnot(cnsc.df[z, ][, !any(CALL==1)])
+			set(cnsc.1s, i, 'GAP_LEN_EFF', cnsc.df[z, ][, sum(abs(CNS_PR_CALL-PR_CALL))])
+		}
+		set(cnsc.1s, NULL, 'GAP_LEN_EFF', cnsc.1s[, GAP_LEN_EFF/ifelse(is.na(par['PRCALL.thrmax']),1,par['PRCALL.thrmax'])])
+		#	determine if is same chunk
+		tmp		<- cnsc.1s[, {					
+					z	<- as.numeric(!is.na(GAP_LEN) & GAP_LEN>2*par['PRCALL.cutprdcthair'])					
+					list(CALL_ID=CALL_ID, CHUNK_ID=cumsum(c(0, z[-length(z)])))	
+				}, by='TAXON']
+		cnsc.1s	<- merge(cnsc.1s, tmp, by=c('TAXON','CALL_ID'))		
+		#	determine if is no hair
+		cnsc.1s[, HAIR:=1]
+		#	no hair if first call of chunk, and longer than what is considered to be hair
+		cnsc.1s	<- merge(cnsc.1s, cnsc.1s[, list(CALL_ID=min(CALL_ID), HAIRtmp=CALL_LEN[which.min(CALL_ID)]<par['PRCALL.cutprdcthair']), by=c('TAXON','CHUNK_ID')], by=c('TAXON','CHUNK_ID','CALL_ID'), all.x=TRUE)
+		tmp		<- cnsc.1s[,which(!is.na(HAIRtmp))]
+		set(cnsc.1s, tmp, 'HAIR', cnsc.1s[tmp, HAIR*HAIRtmp])
+		set(cnsc.1s, NULL, 'HAIRtmp', NULL)
+		#	no hair if last call of chunk and longer than what is considered to be hair
+		cnsc.1s	<- merge(cnsc.1s, cnsc.1s[, list(CALL_ID=max(CALL_ID), HAIRtmp=CALL_LEN[which.max(CALL_ID)]<par['PRCALL.cutprdcthair']), by=c('TAXON','CHUNK_ID')], by=c('TAXON','CHUNK_ID','CALL_ID'), all.x=TRUE)
+		tmp		<- cnsc.1s[,which(!is.na(HAIRtmp))]
+		set(cnsc.1s, tmp, 'HAIR', cnsc.1s[tmp, HAIR*HAIRtmp])
+		set(cnsc.1s, NULL, 'HAIRtmp', NULL)
+		#	no hair if neither first nor last call of chunk
+		tmp		<- cnsc.1s[, list(CALL_ID= CALL_ID[ CALL_ID!=max(CALL_ID) & CALL_ID!=min(CALL_ID)], HAIRtmp=0L), by=c('TAXON','CHUNK_ID')]	
+		cnsc.1s	<- merge(cnsc.1s, subset(tmp, !is.na(CALL_ID)), by=c('TAXON','CHUNK_ID','CALL_ID'), all.x=TRUE)
+		tmp		<- cnsc.1s[,which(!is.na(HAIRtmp))]
+		set(cnsc.1s, tmp, 'HAIR', cnsc.1s[tmp, HAIR*HAIRtmp])
+		set(cnsc.1s, NULL, 'HAIRtmp', NULL)
+		#	calculate if next is hair
+		cnsc.1s	<- merge(cnsc.1s, cnsc.1s[, list(CALL_ID=CALL_ID, HAIR_NEXT=c(HAIR[-1], 0)), by=c('TAXON','CHUNK_ID')], by=c('TAXON','CHUNK_ID','CALL_ID'))		
 	}
-	set(cnsc.1s, NULL, 'GAP_LEN_EFF', cnsc.1s[, GAP_LEN_EFF/ifelse(is.na(par['PRCALL.thrmax']),1,par['PRCALL.thrmax'])])
-	#	determine if is same chunk
-	tmp		<- cnsc.1s[, {					
-				z	<- as.numeric(!is.na(GAP_LEN) & GAP_LEN>2*par['PRCALL.cutprdcthair'])					
-				list(CALL_ID=CALL_ID, CHUNK_ID=cumsum(c(0, z[-length(z)])))	
-			}, by='TAXON']
-	cnsc.1s	<- merge(cnsc.1s, tmp, by=c('TAXON','CALL_ID'))		
-	#	determine if is no hair
-	cnsc.1s[, HAIR:=1]
-	#	no hair if first call of chunk, and longer than what is considered to be hair
-	cnsc.1s	<- merge(cnsc.1s, cnsc.1s[, list(CALL_ID=min(CALL_ID), HAIRtmp=CALL_LEN[which.min(CALL_ID)]<par['PRCALL.cutprdcthair']), by=c('TAXON','CHUNK_ID')], by=c('TAXON','CHUNK_ID','CALL_ID'), all.x=TRUE)
-	tmp		<- cnsc.1s[,which(!is.na(HAIRtmp))]
-	set(cnsc.1s, tmp, 'HAIR', cnsc.1s[tmp, HAIR*HAIRtmp])
-	set(cnsc.1s, NULL, 'HAIRtmp', NULL)
-	#	no hair if last call of chunk and longer than what is considered to be hair
-	cnsc.1s	<- merge(cnsc.1s, cnsc.1s[, list(CALL_ID=max(CALL_ID), HAIRtmp=CALL_LEN[which.max(CALL_ID)]<par['PRCALL.cutprdcthair']), by=c('TAXON','CHUNK_ID')], by=c('TAXON','CHUNK_ID','CALL_ID'), all.x=TRUE)
-	tmp		<- cnsc.1s[,which(!is.na(HAIRtmp))]
-	set(cnsc.1s, tmp, 'HAIR', cnsc.1s[tmp, HAIR*HAIRtmp])
-	set(cnsc.1s, NULL, 'HAIRtmp', NULL)
-	#	no hair if neither first nor last call of chunk
-	tmp		<- cnsc.1s[, list(CALL_ID= CALL_ID[ CALL_ID!=max(CALL_ID) & CALL_ID!=min(CALL_ID)], HAIRtmp=0L), by=c('TAXON','CHUNK_ID')]	
-	cnsc.1s	<- merge(cnsc.1s, subset(tmp, !is.na(CALL_ID)), by=c('TAXON','CHUNK_ID','CALL_ID'), all.x=TRUE)
-	tmp		<- cnsc.1s[,which(!is.na(HAIRtmp))]
-	set(cnsc.1s, tmp, 'HAIR', cnsc.1s[tmp, HAIR*HAIRtmp])
-	set(cnsc.1s, NULL, 'HAIRtmp', NULL)
-	#	calculate if next is hair
-	cnsc.1s	<- merge(cnsc.1s, cnsc.1s[, list(CALL_ID=CALL_ID, HAIR_NEXT=c(HAIR[-1], 0)), by=c('TAXON','CHUNK_ID')], by=c('TAXON','CHUNK_ID','CALL_ID'))
 	#	fill internal gaps
 	if((!is.na(par['PRCALL.rmintrnlgpsblw'] | !is.na(par['PRCALL.rmintrnlgpsend']))) && nrow(cnsc.1s))
 	{					

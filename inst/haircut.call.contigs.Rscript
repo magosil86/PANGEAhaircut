@@ -72,8 +72,8 @@ my.dumpframes<- function()
 {
 	geterrmessage()
 	dump.frames()
-	cat(paste("\nmy.dumpframes dump 'last.dump' to file",paste(HOME,paste("debug_",paste(strsplit(date(),' ')[[1]],collapse='_'),".rda\n",sep=''),sep='')))
-	save(last.dump, file=paste(HOME,paste("debug_",paste(strsplit(date(),' ')[[1]],collapse='_'),".rda",sep=''),sep=''))
+	cat(paste("\nmy.dumpframes dump 'last.dump' to file",paste(getwd(),paste("debug_",paste(strsplit(date(),' ')[[1]],collapse='_'),".rda\n",sep=''),sep='/')))
+	save(last.dump, file=paste(getwd(),paste("debug_",paste(strsplit(date(),' ')[[1]],collapse='_'),".rda",sep=''),sep='/'))
 	q()
 }
 ###############################################################################
