@@ -89,7 +89,7 @@ predict.fun				<- tmp$predict
 ctrain	<- NULL
 if(!is.na(trainfile))
 {
-	ctrain	<- haircut.get.training.contigs(NULL, trainfile, NULL)
+	ctrain	<- haircut.get.training.contigs(NA, trainfile, NULL)
 	set(ctrain, NULL, 'CUT', ctrain[, factor(CUT, levels=c('cut','raw'), labels=c('Y','N'))])
 	setnames(ctrain, 'CUT', 'BLASTnCUT')				
 }

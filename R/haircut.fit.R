@@ -1,13 +1,19 @@
 ##--------------------------------------------------------------------------------------------------------
 ##	get contigs to be used for training. this excludes duplicate raw/cut contigs for which a curated answer is available 
 ##--------------------------------------------------------------------------------------------------------
-haircut.get.training.contigs<- function(indir, outfile, ctrain)
+#' @title Generate curated contigs that are used for training
+#' @export
+haircut.get.training.contigs<- function(indir=NA, outfile=NA, ctrain=NULL)
 {
-	options(show.error.messages = FALSE)		
-	readAttempt		<-try(suppressWarnings(load(outfile)))
-	options(show.error.messages = TRUE)	
+	if(!is.na(outfile))
+	{
+		options(show.error.messages = FALSE)		
+		readAttempt		<-try(suppressWarnings(load(outfile)))
+		options(show.error.messages = TRUE)			
+	}
 	if( inherits(readAttempt, "try-error")	)
 	{
+		stopifnot(!is.na(indir),!is.null(ctrain))
 		infiles	<- data.table(FILE=list.files(indir, pattern='fasta$', recursive=T))
 		infiles[, PNG_ID:= gsub('_wRefs\\.fasta','',gsub('_cut|_raw','',basename(FILE)))]
 		infiles[, BLASTnCUT:= regmatches(FILE,regexpr('cut|raw',FILE))]		 
