@@ -346,7 +346,7 @@ pipeline.various<- function()
 			cmd.hpccaller(paste(DATA,"tmp",sep='/'), outfile, cmd)	
 		}
 	}
-	if(1)
+	if(0)
 	{
 		indir		<- paste(DATA, 'contigs_150408_wref', sep='/' )
 		outdir		<- paste(DATA, 'contigs_150408_wref_cutstat', sep='/' )		
@@ -361,6 +361,27 @@ pipeline.various<- function()
 			cat(cmd)		
 			cmd.hpccaller(paste(DATA,"tmp",sep='/'), paste("hrct",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)	
 		}	
+	}
+	if(1)
+	{
+		indir.st	<- paste(DATA,'contigs_150408_wref_cutstat',sep='/')
+		indir.al	<- paste(DATA,'contigs_150408_wref',sep='/')
+		outdir		<- paste(DATA,'contigs_150408_model150816a',sep='/')
+		trainfile	<- paste(DATA,'contigs_150408_trainingset_subsets.R',sep='/')
+		batch.n		<- 200
+		
+		tmp			<- data.table(INFILE=list.files(indir.st, pattern='\\.R$', recursive=T))
+		tmp[, BATCH:= ceiling(seq_len(nrow(tmp))/batch.n)]
+		tmp			<- tmp[, max(BATCH)]
+		for(batch.id in seq.int(1,tmp))
+		{			
+			cmd			<- cmd.haircut.call(indir.st, indir.al, outdir, trainfile=trainfile, batch.n=batch.n, batch.id=batch.id)
+			cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=4, hpc.mem="5000mb")
+			cat(cmd)		
+			cmd.hpccaller(paste(DATA,"tmp",sep='/'), paste("hrct",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)	
+			stop()
+		}	
+		quit("no")
 	}
 }
 ##--------------------------------------------------------------------------------------------------------
@@ -408,27 +429,6 @@ prog.haircut.150806<- function()
 		indir.al	<- paste(DATA,'contigs_150408_wref',sep='/')
 		outdir		<- paste(DATA,'contigs_150408_model150816a',sep='/')
 		cmd			<- cmd.haircut.call(indir.st, indir.al, outdir)		
-	}
-	if(1)
-	{
-		indir.st	<- paste(DATA,'contigs_150408_wref_cutstat',sep='/')
-		indir.al	<- paste(DATA,'contigs_150408_wref',sep='/')
-		outdir		<- paste(DATA,'contigs_150408_model150816a',sep='/')
-		trainfile	<- paste(DATA,'contigs_150408_trainingset_subsets.R',sep='/')
-		batch.n		<- 200
-		
-		tmp			<- data.table(INFILE=list.files(indir.st, pattern='\\.R$', recursive=T))
-		tmp[, BATCH:= ceiling(seq_len(nrow(tmp))/batch.n)]
-		tmp			<- tmp[, max(BATCH)]
-		for(batch.id in seq.int(1,tmp))
-		{			
-			cmd			<- cmd.haircut.call(indir.st, indir.al, outdir, trainfile=trainfile, batch.n=batch.n, batch.id=batch.id)
-			cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=4, hpc.mem="5000mb")
-			cat(cmd)		
-			cmd.hpccaller(paste(DATA,"tmp",sep='/'), paste("hrct",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)	
-			stop()
-		}	
-		quit("no")
 	}
 	if(0)
 	{

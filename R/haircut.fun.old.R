@@ -917,6 +917,123 @@ haircutwrap.get.call.for.PNG_ID.150811<- function(indir.st,indir.al,outdir,ctrmc
 ##--------------------------------------------------------------------------------------------------------
 ##	wrapper to call 'haircutwrap.get.call.for.PNG_ID'
 ##--------------------------------------------------------------------------------------------------------
+haircutwrap.get.call.for.PNG_ID.150816<- function(indir.st,indir.al,outdir,ctrmc,predict.fun,par,ctrain=NULL,batch.n=NA,batch.id=NA)
+{
+	infiles	<- data.table(INFILE=list.files(indir.st, pattern='\\.R$', recursive=T))
+	infiles[, PNG_ID:= gsub('_wRefs.*','',INFILE)]
+	#infiles[, BLASTnCUT:= regmatches(INFILE,regexpr('cut|raw',INFILE))]
+	#set(infiles, NULL, 'BLASTnCUT', infiles[, factor(BLASTnCUT, levels=c('cut','raw'), labels=c('Y','N'))])
+	alfiles <- data.table(ALFILE=list.files(indir.al, pattern='\\.fasta$', recursive=T))
+	alfiles[, PNG_ID:= gsub('_wRefs.*','',ALFILE)]
+	#alfiles[, BLASTnCUT:= regmatches(basename(ALFILE),regexpr('cut|raw',basename(ALFILE)))]
+	#set(alfiles, NULL, 'BLASTnCUT', alfiles[, factor(BLASTnCUT, levels=c('cut','raw'), labels=c('Y','N'))])
+	infiles	<- merge(infiles, alfiles, by='PNG_ID')
+	if(!is.na(batch.n) & !is.na(batch.id))
+	{
+		infiles[, BATCH:= ceiling(seq_len(nrow(infiles))/batch.n)]
+		infiles		<- subset(infiles, BATCH==batch.id)
+	}
+	#	predict by PANGEA_ID
+	cnsc.info	<-  infiles[,
+			{
+				cat(paste('\nProcess', PNG_ID))
+				with.warning	<- 0
+				#	catch any warnings that indicate that automatic calling may have failed
+				#	if this happens, set confidence scores to 0
+				tryCatch(
+						{
+							if(0)	#devel
+							{
+								PNG_ID<- png_id	<- '15172_1_32'
+								#PNG_ID<- png_id	<- '12559_1_11'
+								#PNG_ID<- png_id	<- '14728_1_84'
+								#PNG_ID<- png_id	<- '14938_1_10'
+								#PNG_ID<- png_id	<- '14728_1_82'
+								#PNG_ID<- png_id	<- '12559_1_24'
+								#PNG_ID<- png_id	<- '12559_1_81'
+								#PNG_ID<- png_id	<- '12559_1_87'
+								#PNG_ID<- png_id	<- '12559_1_13'
+								#PNG_ID<- png_id	<- '13549_1_74'
+								#PNG_ID<- png_id	<- '13554_1_12'
+								#PNG_ID<- png_id	<- '13554_1_14'
+								#PNG_ID<- png_id	<- '13554_1_27'
+								#PNG_ID<- png_id	<- '13554_1_33'
+								#PNG_ID<- png_id	<- '14760_1_1'
+								#PNG_ID<- png_id	<- '15034_1_75'
+								#PNG_ID<- png_id	<- '14944_1_17'
+								#PNG_ID<- png_id	<- '15065_1_24'
+								files	<- subset(infiles, PNG_ID==png_id)[, INFILE]
+								alfiles	<- subset(infiles, PNG_ID==png_id)[, ALFILE]								
+								tmp		<- haircut.get.call.for.PNG_ID(indir.st, indir.al, png_id, files, alfiles, bc, par, ctrmc, predict.fun)
+							}
+							if(1)
+								tmp		<- haircut.get.call.for.PNG_ID(indir.st, indir.al, PNG_ID, INFILE, ALFILE, par, ctrmc, predict.fun)							
+						}, 
+						warning=function(w)
+						{ 
+							tmp				<<- tmp 
+							with.warning	<<- 1							
+						})
+				crs		<- tmp$crs
+				cnsc.df	<- tmp$cnsc.df	
+				#	handle output
+				if(any(grepl(PNG_ID,rownames(crs[['N']]))))
+				{
+					tmp		<- paste(outdir,'/',PNG_ID,'_wref_nohaironraw.fasta',sep='')
+					cat('\nWrite to file', tmp)
+					write.dna(crs[['N']], file=tmp, format='fasta', colsep='', nbcol=-1)							
+				}
+				if(any(grepl(PNG_ID,rownames(crs[['Y']]))))
+				{
+					tmp		<- paste(outdir,'/',PNG_ID,'_wref_nohaironcut.fasta',sep='')
+					cat('\nWrite to file', tmp)
+					write.dna(crs[['Y']], file=tmp, format='fasta', colsep='', nbcol=-1)							
+				}
+				#	see if there is curated contig available
+				if(!is.null(ctrain))
+				{
+					cnsc.df	<- merge(cnsc.df, subset(ctrain, select=c(PNG_ID, TAXON, BLASTnCUT, ANS_FIRST, ANS_LAST)), all.x=T, by=c('PNG_ID','TAXON','BLASTnCUT'))		
+					cnsc.df[, CUR_CALL:=NA_integer_]
+					set(cnsc.df, cnsc.df[, which(!is.na(ANS_FIRST) & SITE>=ANS_FIRST & SITE<=ANS_LAST)], 'CUR_CALL', 1L)
+					set(cnsc.df, cnsc.df[, which(!is.na(ANS_FIRST) & (SITE<ANS_FIRST | SITE>ANS_LAST))], 'CUR_CALL', 0L)
+					set(cnsc.df, cnsc.df[, which(is.na(CUR_CALL))], 'CUR_CALL', 0L)								
+				}	
+				if(is.null(ctrain))
+					cnsc.df[, CUR_CALL:=NA_integer_]
+				#	save as R
+				tmp	<- paste(outdir, '/', PNG_ID, '_wref_nohaironcutraw.R',sep='')
+				cat('\nSave to file', tmp)
+				save(cnsc.df, crs, file=tmp)
+				#	plot
+				cnsc.df[, TAXONnCUT:= paste(TAXON,BLASTnCUT,sep='_BLASTnCUT:')]
+				ggplot(cnsc.df, aes(x=SITE, fill=BLASTnCUT, group=TAXONnCUT)) +
+						geom_ribbon(aes(ymax=CALL, ymin=0), alpha=0.5) +
+						geom_line(aes(y=PR_CALL), colour='black') +
+						geom_line(aes(y=CNS_PR_CALL), colour='blue') +
+						geom_line(aes(y=CUR_CALL), colour='red') +
+						scale_x_continuous(breaks=seq(0,15e3, ifelse(cnsc.df[,max(SITE)]>5e2, 5e2, floor(cnsc.df[,max(SITE)/3])))) + 
+						facet_wrap(~TAXONnCUT, ncol=1) + theme_bw() + theme(legend.position='bottom') +
+						labs(fill='Contig BLASTnCUT', x='position on consensus w/o LTR', y='fill: predicted call\nblack line: predictive probability\nblue line: threshold\nred line: curated call')
+				tmp		<- paste(outdir, '/', PNG_ID, '_wref_nohaironcutraw.pdf',sep='')
+				cat('\nPlot to file', tmp)
+				ggsave(w=10, h=3*cnsc.df[, length(unique(TAXON))], file=tmp)
+				#	report confidence score
+				tmp		<- subset(cnsc.df, CALL==1)[, list(QUANTILE=c(0,0.01,0.05,0.1,0.2,0.5), PR_CALL=quantile(PR_CALL, p=c(0,0.01,0.05,0.1,0.2,0.5))), by=c('TAXON','BLASTnCUT')]
+				if(with.warning)
+					set(tmp, NULL, 'PR_CALL', 0)
+				tmp
+			}, by='PNG_ID']
+	#	write quantiles of PR_CALL to file
+	if(is.na(batch.n) || is.na(batch.id))
+		file		<- paste(outdir, '/model150816a_QUANTILESofPRCALLbyCONTIG.csv',sep='')
+	if(!is.na(batch.n) & !is.na(batch.id))
+		file		<- paste(outdir, '/model150816a_QUANTILESofPRCALLbyCONTIG_batchn',batch.n,'_batchid',batch.id,'.csv',sep='')
+	cnsc.info	<- dcast.data.table(cnsc.info, PNG_ID+TAXON+BLASTnCUT~QUANTILE, value.var='PR_CALL')
+	write.csv(cnsc.info, row.names=FALSE, file=file)	
+}	
+##--------------------------------------------------------------------------------------------------------
+##	wrapper to call 'haircutwrap.get.call.for.PNG_ID'
+##--------------------------------------------------------------------------------------------------------
 haircutwrap.get.call.for.PNG_ID.150814<- function(indir.st,indir.al,outdir,ctrmc,predict.fun,par,ctrain=NULL)
 {
 	infiles	<- data.table(INFILE=list.files(indir.st, pattern='\\.R$', recursive=T))

@@ -28,58 +28,52 @@ haircutwrap.get.call.for.PNG_ID<- function(indir.st,indir.al,outdir,ctrmc,predic
 	cnsc.info	<-  infiles[,
 			{
 				cat(paste('\nProcess', PNG_ID))
-				with.warning	<- 0
+				conf	<- 1
 				#	catch any warnings that indicate that automatic calling may have failed
 				#	if this happens, set confidence scores to 0
-				tryCatch(
-						{
-							if(0)	#devel
-							{
-								PNG_ID<- png_id	<- '15172_1_32'
-								#PNG_ID<- png_id	<- '12559_1_11'
-								#PNG_ID<- png_id	<- '14728_1_84'
-								#PNG_ID<- png_id	<- '14938_1_10'
-								#PNG_ID<- png_id	<- '14728_1_82'
-								#PNG_ID<- png_id	<- '12559_1_24'
-								#PNG_ID<- png_id	<- '12559_1_81'
-								#PNG_ID<- png_id	<- '12559_1_87'
-								#PNG_ID<- png_id	<- '12559_1_13'
-								#PNG_ID<- png_id	<- '13549_1_74'
-								#PNG_ID<- png_id	<- '13554_1_12'
-								#PNG_ID<- png_id	<- '13554_1_14'
-								#PNG_ID<- png_id	<- '13554_1_27'
-								#PNG_ID<- png_id	<- '13554_1_33'
-								#PNG_ID<- png_id	<- '14760_1_1'
-								#PNG_ID<- png_id	<- '15034_1_75'
-								#PNG_ID<- png_id	<- '14944_1_17'
-								#PNG_ID<- png_id	<- '15065_1_24'
-								files	<- subset(infiles, PNG_ID==png_id)[, INFILE]
-								alfiles	<- subset(infiles, PNG_ID==png_id)[, ALFILE]								
-								tmp		<- haircut.get.call.for.PNG_ID(indir.st, indir.al, png_id, files, alfiles, bc, par, ctrmc, predict.fun)
-							}
-							if(1)
-								tmp		<- haircut.get.call.for.PNG_ID(indir.st, indir.al, PNG_ID, INFILE, ALFILE, par, ctrmc, predict.fun)							
-						}, 
-						warning=function(w)
-						{ 
-							tmp				<<- tmp 
-							with.warning	<<- 1							
-						})
-				crs		<- tmp$crs
+				if(0)	#devel
+				{
+					PNG_ID<- png_id	<- '12559_1_13'
+					#PNG_ID<- png_id	<- '12559_1_11'
+					#PNG_ID<- png_id	<- '14728_1_84'
+					#PNG_ID<- png_id	<- '14938_1_10'
+					#PNG_ID<- png_id	<- '14728_1_82'
+					#PNG_ID<- png_id	<- '12559_1_24'
+					#PNG_ID<- png_id	<- '12559_1_81'
+					#PNG_ID<- png_id	<- '12559_1_87'
+					#PNG_ID<- png_id	<- '12559_1_13'
+					#PNG_ID<- png_id	<- '13549_1_74'
+					#PNG_ID<- png_id	<- '13554_1_12'
+					#PNG_ID<- png_id	<- '13554_1_14'
+					#PNG_ID<- png_id	<- '13554_1_27'
+					#PNG_ID<- png_id	<- '13554_1_33'
+					#PNG_ID<- png_id	<- '14760_1_1'
+					#PNG_ID<- png_id	<- '15034_1_75'
+					#PNG_ID<- png_id	<- '14944_1_17'
+					#PNG_ID<- png_id	<- '15065_1_24'
+					files	<- subset(infiles, PNG_ID==png_id)[, INFILE]
+					alfiles	<- subset(infiles, PNG_ID==png_id)[, ALFILE]								
+					tmp		<- haircut.get.call.for.PNG_ID(indir.st, indir.al, png_id, files, alfiles, par, ctrmc, predict.fun)
+				}			
+				if(1)
+					tmp		<- haircut.get.call.for.PNG_ID(indir.st, indir.al, PNG_ID, INFILE, ALFILE, par, ctrmc, predict.fun)							
+						
+				cr		<- tmp$cr
 				cnsc.df	<- tmp$cnsc.df	
+				conf	<- tmp$conf
 				#	handle output
-				if(any(grepl(PNG_ID,rownames(crs[['N']]))))
+				if(any(grepl(PNG_ID,rownames(cr))))
 				{
-					tmp		<- paste(outdir,'/',PNG_ID,'_wref_nohaironraw.fasta',sep='')
+					tmp		<- paste(outdir,'/',PNG_ID,'_wref_nohair.fasta',sep='')
 					cat('\nWrite to file', tmp)
-					write.dna(crs[['N']], file=tmp, format='fasta', colsep='', nbcol=-1)							
+					write.dna(cr, file=tmp, format='fasta', colsep='', nbcol=-1)							
 				}
-				if(any(grepl(PNG_ID,rownames(crs[['Y']]))))
-				{
-					tmp		<- paste(outdir,'/',PNG_ID,'_wref_nohaironcut.fasta',sep='')
-					cat('\nWrite to file', tmp)
-					write.dna(crs[['Y']], file=tmp, format='fasta', colsep='', nbcol=-1)							
-				}
+				#	save as R
+				tmp	<- paste(outdir, '/', PNG_ID, '_wref_nohair.R',sep='')
+				cat('\nSave to file', tmp)
+				save(cnsc.df, cr, file=tmp)
+				#	handle plotting
+				set(cnsc.df, NULL, 'TAXON', cnsc.df[, gsub('_cut','',TAXON)]) 
 				#	see if there is curated contig available
 				if(!is.null(ctrain))
 				{
@@ -91,12 +85,8 @@ haircutwrap.get.call.for.PNG_ID<- function(indir.st,indir.al,outdir,ctrmc,predic
 				}	
 				if(is.null(ctrain))
 					cnsc.df[, CUR_CALL:=NA_integer_]
-				#	save as R
-				tmp	<- paste(outdir, '/', PNG_ID, '_wref_nohaironcutraw.R',sep='')
-				cat('\nSave to file', tmp)
-				save(cnsc.df, crs, file=tmp)
-				#	plot
-				cnsc.df[, TAXONnCUT:= paste(TAXON,BLASTnCUT,sep='_BLASTnCUT:')]
+				#	plot				
+				cnsc.df[, TAXONnCUT:= cnsc.df[, paste(TAXON,'_cut=',BLASTnCUT,sep='')]]
 				ggplot(cnsc.df, aes(x=SITE, fill=BLASTnCUT, group=TAXONnCUT)) +
 						geom_ribbon(aes(ymax=CALL, ymin=0), alpha=0.5) +
 						geom_line(aes(y=PR_CALL), colour='black') +
@@ -105,12 +95,12 @@ haircutwrap.get.call.for.PNG_ID<- function(indir.st,indir.al,outdir,ctrmc,predic
 						scale_x_continuous(breaks=seq(0,15e3, ifelse(cnsc.df[,max(SITE)]>5e2, 5e2, floor(cnsc.df[,max(SITE)/3])))) + 
 						facet_wrap(~TAXONnCUT, ncol=1) + theme_bw() + theme(legend.position='bottom') +
 						labs(fill='Contig BLASTnCUT', x='position on consensus w/o LTR', y='fill: predicted call\nblack line: predictive probability\nblue line: threshold\nred line: curated call')
-				tmp		<- paste(outdir, '/', PNG_ID, '_wref_nohaironcutraw.pdf',sep='')
+				tmp		<- paste(outdir, '/', PNG_ID, '_wref_nohair.pdf',sep='')
 				cat('\nPlot to file', tmp)
 				ggsave(w=10, h=3*cnsc.df[, length(unique(TAXON))], file=tmp)
 				#	report confidence score
 				tmp		<- subset(cnsc.df, CALL==1)[, list(QUANTILE=c(0,0.01,0.05,0.1,0.2,0.5), PR_CALL=quantile(PR_CALL, p=c(0,0.01,0.05,0.1,0.2,0.5))), by=c('TAXON','BLASTnCUT')]
-				if(with.warning)
+				if(!conf)
 					set(tmp, NULL, 'PR_CALL', 0)
 				tmp
 			}, by='PNG_ID']
@@ -122,8 +112,6 @@ haircutwrap.get.call.for.PNG_ID<- function(indir.st,indir.al,outdir,ctrmc,predic
 	cnsc.info	<- dcast.data.table(cnsc.info, PNG_ID+TAXON+BLASTnCUT~QUANTILE, value.var='PR_CALL')
 	write.csv(cnsc.info, row.names=FALSE, file=file)	
 }	
-
-
 ##--------------------------------------------------------------------------------------------------------
 ##	predict Calls for contigs with same PANGEA ID, based on fitted model
 ##	update: 
@@ -132,6 +120,7 @@ haircutwrap.get.call.for.PNG_ID<- function(indir.st,indir.al,outdir,ctrmc,predic
 ##--------------------------------------------------------------------------------------------------------
 haircut.get.call.for.PNG_ID<- function(indir.st, indir.al, png_id, files, alfiles, par, ctrmc, predict.fun)	
 {
+	conf	<- 1
 	#	load covariates
 	stopifnot(length(files)==1, length(alfiles)==1)
 	load( paste(indir.st, '/', files, sep='') )
@@ -169,11 +158,12 @@ haircut.get.call.for.PNG_ID<- function(indir.st, indir.al, png_id, files, alfile
 	tmp		<- seq(cnsc.df[, floor(min(SITE)/10)*10-10],cnsc.df[, max(SITE)+10],10)	
 	cnsc.df[, CHUNK:=cut(SITE, breaks=tmp, labels=tmp[-length(tmp)])]
 	cnsc.df	<- merge(cnsc.df, ctrmc, by='CHUNK', all.x=TRUE)
+	stopifnot(cnsc.df[,!any(is.na(FRQ))], cnsc.df[,!any(is.na(FRQ_STD))], cnsc.df[,!any(is.na(GPS))] )
 	if(cnsc.df[, any(is.na(BETA0))])
 	{
-		warning('Found NA BETA0 for PNG_ID ',PNG_ID,': likely because the cut/raw contig alignment is much longer than expected. Suggests that the site-specific call probability model may not match to the sites in the alignment. Check manually. ')
-		tmp	<- cnsc.df[, which(SITE==subset(cnsc.df, !is.na(BETA0))[, max(SITE)])[1]]
-		tmp2<- cnsc.df[, which(is.na(BETA0))]
+		conf	<- 0
+		tmp		<- cnsc.df[, which(SITE==subset(cnsc.df, !is.na(BETA0))[, max(SITE)])[1]]
+		tmp2	<- cnsc.df[, which(is.na(BETA0))]
 		set(cnsc.df, tmp2, 'BETA0', cnsc.df[tmp, BETA0])
 		set(cnsc.df, tmp2, 'BETA1', cnsc.df[tmp, BETA1])
 		set(cnsc.df, tmp2, 'BETA2', cnsc.df[tmp, BETA2])
@@ -184,10 +174,11 @@ haircut.get.call.for.PNG_ID<- function(indir.st, indir.al, png_id, files, alfile
 	set(cnsc.df, NULL, 'CNS_PR_CALL', cnsc.df[,predict.fun(CNS_PR_CALL, CNS_GPS, BETA0, BETA1, BETA2)])
 	set(cnsc.df, cnsc.df[, which(CNS_PR_CALL>par['PRCALL.thrmax'])], 'CNS_PR_CALL', par['PRCALL.thrmax']) 
 	#	call if call prob of contig is not too low in relation to the call prob of the consensus 
-	cnsc.df[, CALL:= as.integer(PR_CALL>=CNS_PR_CALL)]	
+	cnsc.df[, CALL:= as.integer(PR_CALL>=CNS_PR_CALL)]
+	stopifnot(cnsc.df[,!any(is.na(CALL))])
 	if(0)
 	{
-		ggplot(subset(cnsc.df, BLASTnCUT=='Y'), aes(x=SITE)) + facet_wrap(~TAXON, ncol=1) +
+		ggplot(cnsc.df, aes(x=SITE)) + facet_wrap(~TAXON, ncol=1) +
 				geom_line(aes(y=PR_CALL), colour='black') +
 				geom_line(aes(y=CNS_FRQ), colour='red') +
 				geom_line(aes(y=CNS_PR_CALL), colour='blue') +
@@ -201,53 +192,87 @@ haircut.get.call.for.PNG_ID<- function(indir.st, indir.al, png_id, files, alfile
 				#print(TAXON)
 				#print(z)
 				z	<- gregexpr('1+',z)[[1]]	
-				list(CALL_ID= seq_along(z), CALL_POS=as.integer(z+min(SITE)-1L), CALL_LEN=attr(z, 'match.length'))
+				list(CALL_ID= seq_along(z), CALL_ID_MX= length(z), CALL_POS=as.integer(z+min(SITE)-1L), CALL_LEN=attr(z, 'match.length'))
 			}, by=c('PNG_ID','TAXON','BLASTnCUT')]
 	cnsc.1s[, CALL_LAST:= CALL_POS+CALL_LEN-1L]
-	cnsc.1s	<- subset(cnsc.1s, CALL_LEN>0)
-	#	fill internal predicted gaps		
+	cnsc.1s	<- subset(cnsc.1s, CALL_LEN>0)		
 	if(!nrow(cnsc.1s))
-		warning('Could not determine any calls for either the raw or cut contigs with PNG_ID ',PNG_ID,'. Check manually.')
-	if((!is.na(par['PRCALL.rmintrnlgpsblw'] | !is.na(par['PRCALL.rmintrnlgpsend']))) && nrow(cnsc.1s))
+		conf	<- 0
+	#	calculate gaps and consecutive chunks
+	tmp		<- cnsc.1s[, {
+				if(length(CALL_ID)==1)
+					ans	<- NA_integer_
+				if(length(CALL_ID)>1)
+					ans	<- CALL_POS[seq.int(2,length(CALL_POS))]-CALL_LAST[seq.int(1,length(CALL_LAST)-1)]-1L
+				list(CALL_LAST=CALL_LAST[seq.int(1,length(CALL_LAST)-1)], GAP_LEN= ans)
+			}, by=c('TAXON','BLASTnCUT')]
+	cnsc.1s	<- merge(cnsc.1s, tmp,  by=c('TAXON','BLASTnCUT','CALL_LAST'), all.x=1)
+	#calculate GAP_LEN_EFF
+	cnsc.1s[, GAP_LEN_EFF:=NA_real_]
+	tmp		<- cnsc.1s[, which(!is.na(GAP_LEN))]		
+	for(i in tmp)
 	{
-		cnsc.g	<- cnsc.1s[, {
-					if(length(CALL_ID)==1)
-						ans	<- NA_integer_
-					if(length(CALL_ID)>1)
-						ans	<- CALL_POS[seq.int(2,length(CALL_POS))]-CALL_LAST[seq.int(1,length(CALL_LAST)-1)]-1L
-					list(CALL_LAST=CALL_LAST[seq.int(1,length(CALL_LAST)-1)], GAP_LEN= ans)
-				}, by=c('TAXON','BLASTnCUT')]
-		cnsc.g	<- merge(cnsc.1s, cnsc.g,  by=c('TAXON','BLASTnCUT','CALL_LAST'), all.x=1)
+		z	<- cnsc.df[, which(TAXON==cnsc.1s$TAXON[i] & SITE>cnsc.1s$CALL_LAST[i] & SITE<=(cnsc.1s$CALL_LAST[i]+cnsc.1s$GAP_LEN[i]))]
+		stopifnot(cnsc.df[z, ][, !any(CALL==1)])
+		set(cnsc.1s, i, 'GAP_LEN_EFF', cnsc.df[z, ][, sum(abs(CNS_PR_CALL-PR_CALL))])
+	}
+	set(cnsc.1s, NULL, 'GAP_LEN_EFF', cnsc.1s[, GAP_LEN_EFF/ifelse(is.na(par['PRCALL.thrmax']),1,par['PRCALL.thrmax'])])
+	#	determine if is same chunk
+	tmp		<- cnsc.1s[, {					
+				z	<- as.numeric(!is.na(GAP_LEN) & GAP_LEN>2*par['PRCALL.cutprdcthair'])					
+				list(CALL_ID=CALL_ID, CHUNK_ID=cumsum(c(0, z[-length(z)])))	
+			}, by='TAXON']
+	cnsc.1s	<- merge(cnsc.1s, tmp, by=c('TAXON','CALL_ID'))		
+	#	determine if is no hair
+	cnsc.1s[, HAIR:=1]
+	#	no hair if first call of chunk, and longer than what is considered to be hair
+	cnsc.1s	<- merge(cnsc.1s, cnsc.1s[, list(CALL_ID=min(CALL_ID), HAIRtmp=CALL_LEN[which.min(CALL_ID)]<par['PRCALL.cutprdcthair']), by=c('TAXON','CHUNK_ID')], by=c('TAXON','CHUNK_ID','CALL_ID'), all.x=TRUE)
+	tmp		<- cnsc.1s[,which(!is.na(HAIRtmp))]
+	set(cnsc.1s, tmp, 'HAIR', cnsc.1s[tmp, HAIR*HAIRtmp])
+	set(cnsc.1s, NULL, 'HAIRtmp', NULL)
+	#	no hair if last call of chunk and longer than what is considered to be hair
+	cnsc.1s	<- merge(cnsc.1s, cnsc.1s[, list(CALL_ID=max(CALL_ID), HAIRtmp=CALL_LEN[which.max(CALL_ID)]<par['PRCALL.cutprdcthair']), by=c('TAXON','CHUNK_ID')], by=c('TAXON','CHUNK_ID','CALL_ID'), all.x=TRUE)
+	tmp		<- cnsc.1s[,which(!is.na(HAIRtmp))]
+	set(cnsc.1s, tmp, 'HAIR', cnsc.1s[tmp, HAIR*HAIRtmp])
+	set(cnsc.1s, NULL, 'HAIRtmp', NULL)
+	#	no hair if neither first nor last call of chunk
+	tmp		<- cnsc.1s[, list(CALL_ID= CALL_ID[ CALL_ID!=max(CALL_ID) & CALL_ID!=min(CALL_ID)], HAIRtmp=0L), by=c('TAXON','CHUNK_ID')]	
+	cnsc.1s	<- merge(cnsc.1s, subset(tmp, !is.na(CALL_ID)), by=c('TAXON','CHUNK_ID','CALL_ID'), all.x=TRUE)
+	tmp		<- cnsc.1s[,which(!is.na(HAIRtmp))]
+	set(cnsc.1s, tmp, 'HAIR', cnsc.1s[tmp, HAIR*HAIRtmp])
+	set(cnsc.1s, NULL, 'HAIRtmp', NULL)
+	#	calculate if next is hair
+	cnsc.1s	<- merge(cnsc.1s, cnsc.1s[, list(CALL_ID=CALL_ID, HAIR_NEXT=c(HAIR[-1], 0)), by=c('TAXON','CHUNK_ID')], by=c('TAXON','CHUNK_ID','CALL_ID'))
+	#	fill internal gaps
+	if((!is.na(par['PRCALL.rmintrnlgpsblw'] | !is.na(par['PRCALL.rmintrnlgpsend']))) && nrow(cnsc.1s))
+	{					
+		#	fill internal predicted gaps if no hair
 		if(!is.na(par['PRCALL.rmintrnlgpsblw']))
-			tmp	<- cnsc.g[, which(GAP_LEN<par['PRCALL.rmintrnlgpsblw'])]
-		if(!is.na(par['PRCALL.rmintrnlgpsblw']))
-			tmp	<- union(tmp, cnsc.g[, which(CALL_LAST>par['PRCALL.rmintrnlgpsend'] & !is.na(GAP_LEN))])		
+			tmp	<- cnsc.1s[, which(GAP_LEN_EFF<par['PRCALL.rmintrnlgpsblw'] & HAIR==0 & HAIR_NEXT==0)]
+		#	fill gaps at the end
+		if(!is.na(par['PRCALL.rmintrnlgpsend']))
+			tmp	<- union(tmp, cnsc.1s[, which(CALL_LAST>par['PRCALL.rmintrnlgpsend'] & !is.na(GAP_LEN))])		
 		for(i in tmp)	#	add ith called region to next call region
 		{
-			tmp2	<- cnsc.df[, which(TAXON==cnsc.g$TAXON[i] & BLASTnCUT==cnsc.g$BLASTnCUT[i] & SITE>cnsc.g$CALL_LAST[i] & SITE<=cnsc.g$CALL_LAST[i]+cnsc.g$GAP_LEN[i])]
+			tmp2	<- cnsc.df[, which(TAXON==cnsc.1s$TAXON[i] & BLASTnCUT==cnsc.1s$BLASTnCUT[i] & SITE>cnsc.1s$CALL_LAST[i] & SITE<=cnsc.1s$CALL_LAST[i]+cnsc.1s$GAP_LEN[i])]
 			stopifnot( cnsc.df[tmp2,all(CALL==0)])
-			cat('\nFound internal predicted gap and set to CALL=1, taxon=',cnsc.g[i,TAXON],', cut=',cnsc.g[i,as.character(BLASTnCUT)],', pos=',cnsc.g[i,CALL_LAST+1L],', len=', length(tmp2))
+			cat('\nFound internal predicted gap and set to CALL=1, taxon=',cnsc.1s[i,TAXON],', cut=',cnsc.1s[i,as.character(BLASTnCUT)],', pos=',cnsc.1s[i,CALL_LAST+1L],', len=', length(tmp2))
 			set(cnsc.df, tmp2, 'CALL', 1L)
-			set(cnsc.g, i+1L, 'CALL_POS', cnsc.g[i,CALL_POS])
-			set(cnsc.g, i+1L, 'CALL_LEN', cnsc.g[i+1L,CALL_LEN]+cnsc.g[i,CALL_LEN]+cnsc.g[i,GAP_LEN])
-			set(cnsc.g, i, 'CALL_ID', NA_integer_)
+			set(cnsc.1s, i+1L, 'CALL_POS', cnsc.1s[i,CALL_POS])
+			set(cnsc.1s, i+1L, 'CALL_LEN', cnsc.1s[i+1L,CALL_LEN]+cnsc.1s[i,CALL_LEN]+cnsc.1s[i,GAP_LEN])
+			set(cnsc.1s, i, 'CALL_ID', NA_integer_)
 		}
-		cnsc.1s		<- subset(cnsc.g, !is.na(CALL_ID))
+		cnsc.1s		<- subset(cnsc.1s, !is.na(CALL_ID))
 	}
-	#	check if called contig has gaps of CALL=='0': if yes, return last non-gap before first CALL=='0
+	#	remove hair
 	if(!is.na(par['PRCALL.cutprdcthair']) && nrow(cnsc.1s))
 	{
-		setkey(cnsc.1s, TAXON, BLASTnCUT, CALL_POS)
-		tmp		<- cnsc.1s[, which(CALL_LEN<par['PRCALL.cutprdcthair'])]	
-		for(i in tmp)	#keep raw
+		tmp		<- cnsc.1s[, which(HAIR==1 & CALL_LEN<par['PRCALL.cutprdcthair'] )]	
+		for(i in tmp)
 		{
-			if( (i-1)>0	  &&  cnsc.1s[i-1,TAXON]==cnsc.1s[i,TAXON] &&  cnsc.1s[i-1,BLASTnCUT]==cnsc.1s[i,BLASTnCUT]  &&  cnsc.1s[i-1,GAP_LEN]>2*par['PRCALL.cutprdcthair'])
-			{
-				cat('\nFound predicted extra hair of length <',par['PRCALL.cutprdcthair'],'delete, n=',cnsc.1s$CALL_LEN[i])
-				set(cnsc.df, cnsc.df[, which(TAXON==cnsc.1s$TAXON[i] & BLASTnCUT==cnsc.1s$BLASTnCUT[i] & SITE>=cnsc.1s$CALL_POS[i] & SITE<=cnsc.1s$CALL_LAST[i])], 'CALL', 0L)
-				set(cnsc.1s, i, 'CALL_ID', NA_integer_)
-				set(cnsc.1s, i, 'GAP_LEN', cnsc.1s[i,GAP_LEN]+cnsc.1s[i-1,GAP_LEN]+cnsc.1s[i,CALL_LEN])
-			}				
+			cat('\nFound predicted extra hair of length <',par['PRCALL.cutprdcthair'],'delete, n=',cnsc.1s$CALL_LEN[i])
+			set(cnsc.df, cnsc.df[, which(TAXON==cnsc.1s$TAXON[i] & BLASTnCUT==cnsc.1s$BLASTnCUT[i] & SITE>=cnsc.1s$CALL_POS[i] & SITE<=cnsc.1s$CALL_LAST[i])], 'CALL', 0L)
+			set(cnsc.1s, i, 'CALL_ID', NA_integer_)										
 		}
 		cnsc.1s	<- subset(cnsc.1s, !is.na(CALL_ID))								
 	}
@@ -293,26 +318,25 @@ haircut.get.call.for.PNG_ID<- function(indir.st, indir.al, png_id, files, alfile
 		}										
 		cnsc.1s	<- subset(cnsc.1s, !is.na(CALL_ID))								
 	}
+	#	update CALL_ID s
+	setnames(cnsc.1s, 'CALL_ID', 'CALL_ID_OLD')
+	cnsc.1s		<- merge(cnsc.1s, cnsc.1s[, list(CALL_ID_OLD=CALL_ID_OLD, CALL_ID=seq_along(CALL_POS)), by='TAXON'], by=c('TAXON','CALL_ID_OLD'))
+	set(cnsc.1s, NULL, 'CALL_ID_OLD', NULL)	
+	#cnsc.df		<- merge(cnsc.df, unique(subset(cnsc.1s, select=c(TAXON, CALL_ID))), by='TAXON', all.x=TRUE)
 	#	check there is no dust
 	tmp			<- subset(cnsc.df, CALL==1)[, list(CALL_N= length(CALL)), by=c('TAXON','BLASTnCUT')][, CALL_N]
 	if(length(tmp))
 		stopifnot(min(tmp)>40)
 	#	produce fasta output:
 	#	select cut and raw contigs with a call, then set all characters with CALL==0 to -
-	crs			<- lapply(crs, as.character)
-	tmp			<- subset(cnsc.df, BLASTnCUT=='N' & CALL==1 )[, unique(TAXON)]
-	tmp2		<- rownames(crs[['N']])[ !grepl(png_id,rownames(crs[['N']])) | rownames(crs[['N']])%in%tmp ] 
-	crs[['N']]	<- crs[['N']][tmp2,]
+	cr			<- as.character(cr)
+	tmp			<- subset(cnsc.df, CALL==1 )[, unique(TAXON)]
+	tmp2		<- rownames(cr)[ !grepl(png_id,rownames(cr)) | rownames(cr)%in%tmp ] 
+	cr			<- cr[tmp2,]
 	for(tx in tmp)
-		crs[['N']][tx, subset(cnsc.df, BLASTnCUT=='N' & TAXON==tx & CALL==0 & SITE<=ncol(crs[['N']]))[, SITE]]	<- '-'
-	
-	tmp			<- subset(cnsc.df, BLASTnCUT=='Y' & CALL==1 )[, unique(TAXON)]
-	tmp2		<- rownames(crs[['Y']])[ !grepl(png_id,rownames(crs[['Y']])) | rownames(crs[['Y']])%in%tmp ] 
-	crs[['Y']]	<- crs[['Y']][tmp2,]
-	for(tx in tmp)
-		crs[['Y']][tx, subset(cnsc.df, BLASTnCUT=='Y' & TAXON==tx & CALL==0 & SITE<=ncol(crs[['Y']]))[, SITE]]	<- '-'
-	crs			<- lapply(crs, as.DNAbin)			
-	list(crs=crs, cnsc.df=cnsc.df)
+		cr[tx, subset(cnsc.df, TAXON==tx & CALL==0 & SITE<=ncol(cr))[, SITE]]	<- '-'	
+	cr			<- as.DNAbin(cr)			
+	list(cr=cr, cnsc.df=cnsc.df, conf=conf)
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	process all files in indir with 'haircut.get.cut.statistics'
