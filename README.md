@@ -8,7 +8,11 @@ Code package to post process IVA contigs before they are used to assemble a de n
 
 # Installation
 
-The easiest way to install `PANGEAhaircut` is to use the `devtools` package:
+This `R` package requires third party code before installation:
+
+* MAFFT http://mafft.cbrc.jp/alignment/software/
+
+After these dependencies are installed, the easiest way to install `PANGEAhaircut` is via the `devtools` package:
 
 ```r
 # install.packages("devtools")
