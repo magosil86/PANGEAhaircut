@@ -48,8 +48,10 @@ cmd.various<- function(prog= PR.VARIOUS)
 #' @import data.table zoo plyr ape reshape2 ggplot2
 #' @export
 #' @example example/ex.cmd.align.contigs.with.ref.R
-cmdwrap.align.contigs.with.ref<- function(indir, outdir, reffile=system.file(package="PANGEAhaircut", "HIV1_COM_2012_genome_DNA_WithExtraA1UG.fasta"), batch.n=NA, batch.id=NA)
+cmdwrap.align.contigs.with.ref<- function(indir, outdir, reffile=NA, batch.n=NA, batch.id=NA)
 {
+	if(is.na(reffile))
+		reffile	<- system.file(package="PANGEAhaircut", "HIV1_COM_2012_genome_DNA_WithExtraA1UG.fasta")
 	infiles	<- data.table(INFILE=list.files(indir, pattern='fasta$',recursive=T))
 	infiles	<- subset(infiles, !grepl('Curated', INFILE))
 	infiles[, OUTFILE:= gsub('\\.fasta','_wRefs\\.fasta', gsub('_hiv|_HIV','',basename(INFILE)))]

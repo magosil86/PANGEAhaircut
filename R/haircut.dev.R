@@ -46,7 +46,7 @@ dev.haircut<- function()
 		#	process several files
 		indir	<- '/Users/Oliver/Dropbox\ (Infectious Disease)/PANGEA_data/InterestingContigAlignments'
 		outdir	<- '/Users/Oliver/Dropbox\ (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/interesting_150408'		
-		par		<- c('FRQx.quantile'=0.05, 'FRQx.thr'=0.566, 'CNS_FRQ.window'=100, 'CNS_AGR.window'=200, 'GPS.window'=200)
+		par		<- c('FRQx.quantile'=NA, 'FRQx.thr'=NA, 'CNS_FRQ.window'=200, 'CNS_AGR.window'=200, 'GPS.window'=200)
 		haircutwrap.get.cut.statistics(indir, par, outdir=outdir)
 	}
 	if(0)
@@ -94,7 +94,7 @@ dev.haircut<- function()
 						'PRCALL.thrmax'=0.8, 'PRCALL.thrstd'=10, 'PRCALL.cutprdcthair'=150, 'PRCALL.cutprdctcntg'=50, 'PRCALL.cutrawgrace'=100, 'PRCALL.rmintrnlgpsblw'=100 ,'PRCALL.rmintrnlgpsend'=9700)		
 		haircut.get.training.data(indir, ctrain, par, outdir, outfile)
 	}
-	if(1)	#	fit model
+	if(0)	#	fit model
 	{
 		indir	<- '/Users/Oliver/Dropbox\ (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_150408_train'
 		outfile	<- '/Users/Oliver/Dropbox\ (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/model_150816a.R'
@@ -333,13 +333,23 @@ dev.haircut<- function()
 ##--------------------------------------------------------------------------------------------------------
 prog.haircut.150806<- function()
 {
-	if(0)
+	if(1)
 	{		
-		indir	<- paste(DATA, 'contigs_150408', sep='/' )
-		outdir	<- paste(DATA, 'contigs_150408_wref', sep='/' )
-		outdir	<- paste('/Users/Oliver/Dropbox\ (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut', 'contigs_150408_wref', sep='/' )
-		reffile	<- paste(DATA, 'HIV1_COM_2012_genome_DNA_WithExtraA1UG.fasta', sep='/' )	
-		haircutwrap.align.contigs.with.ref(indir, reffile, outdir)	
+		indir		<- paste(DATA, '/contigs_150408_merged_unaligned', sep='/' )
+		outdir		<- paste(DATA, '/contigs_150408_wref', sep='/' )
+		batch.n		<- 200
+		tmp			<- data.table(FILE=list.files(indir, pattern='fasta$', recursive=T))
+		tmp[, BATCH:= ceiling(seq_len(nrow(tmp))/batch.n)]
+		tmp			<- tmp[, max(BATCH)]
+		for(batch.id in seq.int(1,tmp))
+		{	
+			cmd			<- cmdwrap.align.contigs.with.ref(indir, outdir, batch.n=batch.n, batch.id=batch.id)
+			cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=1, hpc.mem="5000mb")
+			cat(cmd)		
+			outdir		<- paste(DATA,"tmp",sep='/')
+			outfile		<- paste("hrct",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.')
+			cmd.hpccaller(outdir, outfile, cmd)	
+		}
 	}
 	if(0)
 	{

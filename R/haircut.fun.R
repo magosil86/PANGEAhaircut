@@ -341,8 +341,8 @@ haircutwrap.get.cut.statistics<- function(indir, par, outdir=indir, batch.n=NA, 
 	#	determine statistics for each contig after LTR
 	infiles		<- data.table(FILE=list.files(indir, pattern='fasta$', recursive=T))
 	infiles[, PNG_ID:= gsub('_wRefs\\.fasta','',gsub('_cut|_raw','',FILE))]
-	infiles[, BLASTnCUT:= regmatches(FILE,regexpr('cut|raw',FILE))]
-	set(infiles, NULL, 'BLASTnCUT', infiles[, factor(BLASTnCUT, levels=c('cut','raw'), labels=c('Y','N'))])
+	#infiles[, BLASTnCUT:= regmatches(FILE,regexpr('cut|raw',FILE))]
+	#set(infiles, NULL, 'BLASTnCUT', infiles[, factor(BLASTnCUT, levels=c('cut','raw'), labels=c('Y','N'))])
 	if(!is.na(batch.n) & !is.na(batch.id))
 	{
 		infiles[, BATCH:= ceiling(seq_len(nrow(infiles))/batch.n)]
@@ -402,7 +402,7 @@ haircutwrap.get.cut.statistics<- function(indir, par, outdir=indir, batch.n=NA, 
 			cnsc.df	<- haircut.get.cut.statistics(cnsc, rp, tx, par)		
 			#ggplot(cnsc.df, aes(x=SITE)) +facet_wrap(~TAXON, ncol=1) + geom_line(aes(y=FRQ), colour='black') + geom_line(aes(y=AGRpc), colour='blue') + geom_line(aes(y=GPS), colour='red') + geom_line(aes(y=FRQ-2*FRQ_STD), colour='DarkGreen')
 			cnsc.df[, PNG_ID:= infiles[fls, PNG_ID]]
-			cnsc.df[, BLASTnCUT:= infiles[fls, BLASTnCUT]]
+			cnsc.df[, BLASTnCUT:= cnsc.df[, factor(grepl('cut',TAXON),levels=c(TRUE,FALSE),labels=c('Y','N'))]]
 			cat(paste('\nSave contigs, n=', cnsc.df[, length(unique(TAXON))]))
 			#	save
 			file	<- paste(outdir, '/', gsub('\\.fasta',paste('_HAIRCUTSTAT_thr',100*par['FRQx.quantile'],'_aw',par['CNS_AGR.window'],'_fw',par['CNS_FRQ.window'],'_gw',par['GPS.window'],'.R',sep=''),basename(file)), sep='')
