@@ -20,6 +20,12 @@ library(devtools)
 install_github("olli0601/PANGEAhaircut")
 ```
 
+After installation, you may need to make the installed Rscripts executable:
+
+```
+chmod 775 /export71/home/or105/R/x86_64-unknown-linux-gnu-library/3.2/PANGEAhaircut/*Rscript
+```
+
 To work with this `R` package:
 fire up `R`, and type 
 
