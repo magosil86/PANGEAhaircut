@@ -379,9 +379,7 @@ pipeline.various<- function()
 			cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=4, hpc.mem="5000mb")
 			cat(cmd)		
 			cmd.hpccaller(paste(DATA,"tmp",sep='/'), paste("hrct",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)	
-			stop()
 		}	
-		quit("no")
 	}
 }
 ##--------------------------------------------------------------------------------------------------------
