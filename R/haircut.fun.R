@@ -33,7 +33,7 @@ haircutwrap.get.call.for.PNG_ID<- function(indir.st,indir.al,outdir,ctrmc,predic
 				#	if this happens, set confidence scores to 0
 				if(0)	#devel
 				{
-					PNG_ID<- png_id	<- '13548_1_11'
+					PNG_ID<- png_id	<- '14939_1_63'
 					#PNG_ID<- png_id	<- '12559_1_11'
 					#PNG_ID<- png_id	<- '14728_1_84'
 					#PNG_ID<- png_id	<- '14938_1_10'
@@ -254,7 +254,7 @@ haircut.get.call.for.PNG_ID<- function(indir.st, indir.al, png_id, files, alfile
 			tmp	<- cnsc.1s[, which(GAP_LEN_EFF<par['PRCALL.rmintrnlgpsblw'] & HAIR==0 & HAIR_NEXT==0)]
 		#	fill gaps at the end
 		if(!is.na(par['PRCALL.rmintrnlgpsend']))
-			tmp	<- union(tmp, cnsc.1s[, which(CALL_LAST>par['PRCALL.rmintrnlgpsend'] & !is.na(GAP_LEN))])		
+			tmp	<- sort(union(tmp, cnsc.1s[, which(CALL_LAST>par['PRCALL.rmintrnlgpsend'] & !is.na(GAP_LEN))]))		
 		for(i in tmp)	#	add ith called region to next call region
 		{
 			tmp2	<- cnsc.df[, which(TAXON==cnsc.1s$TAXON[i] & BLASTnCUT==cnsc.1s$BLASTnCUT[i] & SITE>cnsc.1s$CALL_LAST[i] & SITE<=cnsc.1s$CALL_LAST[i]+cnsc.1s$GAP_LEN[i])]
