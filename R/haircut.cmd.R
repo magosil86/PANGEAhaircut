@@ -134,21 +134,26 @@ cmd.haircut.pipeline<- function(indir, outdir, batch.n=NA, batch.id=NA)
 #
 #######################################################\n"	
 	#create temporary directories
+	aldir		<- paste('algnd_',format(Sys.time(),"%y-%m-%d-%H-%M-%S"),sep='')
 	cutdir		<- paste('cutstat_',format(Sys.time(),"%y-%m-%d-%H-%M-%S"),sep='')
 	outdir.lcl	<- paste('call_',format(Sys.time(),"%y-%m-%d-%H-%M-%S"),sep='')
 	cmd			<- paste(cmd,"CWD=$(pwd)\n",sep='\n')
 	cmd			<- paste(cmd,"echo $CWD\n",sep='')
+	aldir		<- paste("$CWD/",aldir,sep='')
 	cutdir		<- paste("$CWD/",cutdir,sep='')
 	outdir.lcl	<- paste("$CWD/",outdir.lcl,sep='')
+	cmd			<- paste(cmd,"mkdir -p ",aldir,'\n',sep='')
 	cmd			<- paste(cmd,"mkdir -p ",cutdir,'\n',sep='')
 	cmd			<- paste(cmd,"mkdir -p ",outdir.lcl,'\n',sep='')
-	#run cutstat on batch into cutdir
-	cmd			<- paste(cmd, cmd.haircut.cutstat(indir, cutdir, batch.n=batch.n, batch.id=batch.id), sep='')
+	#run alignment of references on batch into aldir
+	cmd			<- paste(cmd, cmdwrap.align.contigs.with.ref(indir, aldir, batch.n=batch.n, batch.id=batch.id), sep='')
+	#run cutstat on all seqs in aldir
+	cmd			<- paste(cmd, cmd.haircut.cutstat(aldir, cutdir), sep='')
 	#run call on all seqs in cutdir
 	cmd			<- paste(cmd, cmd.haircut.call(cutdir, indir, outdir.lcl), sep='')
 	#copy to destination
 	cmd			<- paste(cmd, "\nmv ",outdir.lcl,"/* ",outdir,"\n",sep='')
-	cmd			<- paste(cmd, "rm -d ",outdir.lcl," ",cutdir,"\n",sep='')
+	cmd			<- paste(cmd, "rm -d ",aldir," ",outdir.lcl," ",cutdir,"\n",sep='')
 	cmd			<- paste(cmd, "\n#######################################################
 #
 # end: run haircut.pipeline
