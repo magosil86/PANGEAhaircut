@@ -4,6 +4,8 @@ PR.STARTME					<- system.file(package=PR.PACKAGE, "misc", "PANGEAhaircut.startme
 #PR.STARTME					<- '/work/or105/libs/HPTN071sim/source/rPANGEAHIVsim/misc/rPANGEAHIV.startme.R'
 PR.VARIOUS					<- paste(PR.STARTME," -exe=VARIOUS",sep='')
 
+PR.FLATTENCNTGS				<- '/Users/Oliver/git/PANGEAhaircut/inst/FlattenContigs.py'
+
 #' @export
 PR.HAIRCUT.CALL				<- paste('Rscript',system.file(package=PR.PACKAGE, "haircut.call.contigs.Rscript"))
 #' @export
@@ -74,6 +76,47 @@ cmdwrap.align.contigs.with.ref<- function(indir, outdir, reffile=NA, batch.n=NA,
 # end: run cmdwrap.align.contigs.with.ref
 #######################################################\n",sep='')
 	cmd
+}
+##--------------------------------------------------------------------------------------------------------
+##	Use Chris s python script to flatten contigs in file
+##--------------------------------------------------------------------------------------------------------
+cmd.flatten.contigs<- function(infile, infile.args, outfile, prog=PROG.FLATTENCNTGS)
+{	
+	tmp		<- c( 	gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',infile,fixed=T),fixed=T),fixed=T),			
+					gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',outfile,fixed=T),fixed=T),fixed=T)
+	)
+	paste(PR.FLATTENCNTGS,' ',tmp[1],' ',infile.args,' > ',tmp[2],sep='')
+}
+##--------------------------------------------------------------------------------------------------------
+##	Use Chris s python script to flatten contigs in file
+##--------------------------------------------------------------------------------------------------------
+cmdwrap.flatten.contigs<- function(indir, outdir)
+{	
+	infiles	<- data.table(INFILEfa=list.files(indir, pattern='fasta$',recursive=T))
+	infiles[, PNG_ID:= gsub('_wref.*|_nLTR','',gsub('\\.fasta','',basename(INFILEfa)))]
+	tmp		<- data.table(INFILEr=list.files(indir, pattern='R$',recursive=T))
+	tmp[, PNG_ID:= gsub('_wref.*|_nLTR','',gsub('\\.R','',basename(INFILEr)))]
+	infiles	<- merge(infiles, tmp, by='PNG_ID',all.x=TRUE)
+	infiles[, OUTFILE:= gsub('_wref','',gsub('\\.fasta','_flat\\.fasta',basename(INFILEfa)))]
+	
+	tmp		<- infiles[,{
+				#png_id	<- PNG_ID		<- '12559_1_1'
+				#INFILEfa   	<- subset(infiles, PNG_ID==png_id)[, INFILEfa]
+				#INFILEr     <- subset(infiles, PNG_ID==png_id)[, INFILEr]             
+				#OUTFILE		<- subset(infiles, PNG_ID==png_id)[, OUTFILE]
+				if(!is.na(INFILEr))
+					load(paste(indir,'/',INFILEr,sep=''))
+				if(is.na(INFILEr))
+				{
+					cr		<- read.dna(paste(indir,'/',INFILEfa,sep=''),format='fasta')					 
+					cr		<- cr[, seq.int(haircut.find.nonLTRstart(cr), ncol(cr))]
+					cr		<- cr[, seq.int(1, haircut.find.lastRefSite(cr))]							
+				}					
+				tmp			<- paste(rownames(cr)[grepl(PNG_ID,rownames(cr))],collapse=' ')
+				tmp			<- cmd.flatten.contigs(paste(indir,'/',INFILEfa,sep=''), tmp, paste(outdir,'/',OUTFILE,sep=''))
+				list(CMD=tmp)
+			},by='PNG_ID']
+	paste(tmp$CMD, collapse='\n')
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	call to MAFFT to align contigs with reference compendium

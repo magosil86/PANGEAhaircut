@@ -33,7 +33,7 @@ haircutwrap.get.call.for.PNG_ID<- function(indir.st,indir.al,outdir,ctrmc,predic
 				#	if this happens, set confidence scores to 0
 				if(0)	#devel
 				{
-					PNG_ID<- png_id	<- '14939_1_63'
+					PNG_ID<- png_id	<- '15099_1_49'
 					#PNG_ID<- png_id	<- '12559_1_11'
 					#PNG_ID<- png_id	<- '14728_1_84'
 					#PNG_ID<- png_id	<- '14938_1_10'
@@ -50,7 +50,7 @@ haircutwrap.get.call.for.PNG_ID<- function(indir.st,indir.al,outdir,ctrmc,predic
 					#PNG_ID<- png_id	<- '14760_1_1'
 					#PNG_ID<- png_id	<- '15034_1_75'
 					#PNG_ID<- png_id	<- '14944_1_17'
-					#PNG_ID<- png_id	<- '15065_1_24'
+					PNG_ID<- png_id	<- '13554_1_14'
 					files	<- subset(infiles, PNG_ID==png_id)[, INFILE]
 					alfiles	<- subset(infiles, PNG_ID==png_id)[, ALFILE]								
 					tmp		<- haircut.get.call.for.PNG_ID(indir.st, indir.al, png_id, files, alfiles, par, ctrmc, predict.fun)
@@ -323,8 +323,36 @@ haircut.get.call.for.PNG_ID<- function(indir.st, indir.al, png_id, files, alfile
 	}
 	#	update CALL_ID s
 	setnames(cnsc.1s, 'CALL_ID', 'CALL_ID_OLD')
-	cnsc.1s		<- merge(cnsc.1s, cnsc.1s[, list(CALL_ID_OLD=CALL_ID_OLD, CALL_ID=seq_along(CALL_POS)), by='TAXON'], by=c('TAXON','CALL_ID_OLD'))
+	cnsc.1s		<- merge(cnsc.1s, cnsc.1s[, list(CALL_ID_OLD=CALL_ID_OLD, CALL_ID=seq_along(CALL_POS), CALL_N=length(CALL_POS)), by='TAXON'], by=c('TAXON','CALL_ID_OLD'))
 	set(cnsc.1s, NULL, 'CALL_ID_OLD', NULL)	
+	#	split contigs if more than one CALL_ID	
+	cnsc.1s		<- subset(cnsc.1s, CALL_N>1)
+	if(nrow(cnsc.1s))
+	{		
+		# split cnsc.df
+		z		<- cnsc.df[, sum(CALL)]
+		cnsc.df	<- merge(cnsc.df,subset(cnsc.1s, select=c(TAXON, BLASTnCUT, CALL_ID, CALL_POS, CALL_LAST)),all.x=TRUE, allow.cartesian=TRUE,by=c('TAXON','BLASTnCUT'))
+		tmp		<- cnsc.df[, which(!is.na(CALL_ID) & (SITE<CALL_POS | SITE>CALL_LAST))]
+		set(cnsc.df, tmp, 'CALL', 0L)
+		stopifnot(z==cnsc.df[, sum(CALL)])
+		tmp		<- cnsc.df[, which(!is.na(CALL_ID))]
+		set(cnsc.df, tmp, 'TAXON', cnsc.df[tmp, paste(TAXON,CALL_ID,sep='.')])
+		# split seqs
+		setkey(cnsc.1s, TAXON, BLASTnCUT, CALL_ID)
+		for(i in rev(seq_len(nrow(cnsc.1s))))
+		{
+			if(cnsc.1s[i,CALL_ID]>1)
+			{
+				tmp				<- cr[cnsc.1s[i,TAXON], ]
+				rownames(tmp)	<- cnsc.1s[i,paste(TAXON,CALL_ID,sep='.')]
+				cr				<- rbind(cr,tmp)	
+			}
+			if(cnsc.1s[i,CALL_ID]==1)
+			{
+				rownames(cr)[ rownames(cr)==cnsc.1s[i,TAXON] ]	<- cnsc.1s[i,paste(TAXON,CALL_ID,sep='.')]
+			}
+		}
+	}
 	#cnsc.df		<- merge(cnsc.df, unique(subset(cnsc.1s, select=c(TAXON, CALL_ID))), by='TAXON', all.x=TRUE)
 	#	check there is no dust
 	tmp			<- subset(cnsc.df, CALL==1)[, list(CALL_N= length(CALL)), by=c('TAXON','BLASTnCUT')][, CALL_N]
@@ -373,7 +401,7 @@ haircutwrap.get.cut.statistics<- function(indir, par, outdir=indir, batch.n=NA, 
 	cat(paste('\nFound processed files, n=', infiles[, length(which(DONE))]))
 	infiles		<- subset(infiles, !DONE)
 	#
-	#	infiles[, which(grepl('15172_1_32',FILE))]	fls<- 1431
+	#	infiles[, which(grepl('13554_1_14',FILE))]	fls<- 140
 	#	process files
 	for(fls in infiles[, seq_along(FILE)])
 	{

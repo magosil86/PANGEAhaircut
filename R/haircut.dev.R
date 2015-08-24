@@ -5,6 +5,24 @@ dev.haircut<- function()
 {
 	if(0)
 	{
+		#fixup mafft
+		indir		<- paste(DATA, 'contigs_150408_merged_unaligned', sep='/' )
+		outdir		<- paste(DATA, 'contigs_150408_wref2', sep='/' )
+		batch.n		<- 200
+		
+		tmp			<- data.table(INFILE=list.files(indir, pattern='fasta$', recursive=T))
+		tmp[, PNG_ID:= gsub('\\.fasta','',gsub('_cut|_raw','',INFILE))]
+		tmp[, OUTFILE:= gsub('\\.fasta','_wRefs\\.fasta', gsub('_hiv|_HIV','',basename(INFILE)))]
+		reffile		<- system.file(package="PANGEAhaircut", "HIV1_COM_2012_genome_DNA_WithExtraA1UG.fasta")
+		
+		i			<- tmp[, which(PNG_ID=='13554_1_14')]
+		INFILE		<- tmp[i, INFILE]
+		OUTFILE		<- tmp[i, OUTFILE]
+		reffile		<- system.file(package="PANGEAhaircut", "HIV1_COM_2012_genome_DNA_WithExtraA1UG.fasta")
+		cat(cmd.align.contigs.with.ref(paste(indir,'/',INFILE,sep=''), reffile, paste(outdir,'/',OUTFILE,sep='')))
+	}
+	if(0)
+	{
 		#	read just one file
 		#	determine statistics for each contig after LTR		
 		indir	<- '/Users/Oliver/Dropbox\ (Infectious Disease)/PANGEA_data/InterestingContigAlignments'
@@ -40,6 +58,49 @@ dev.haircut<- function()
 		#	get cut statistics
 		cnsc.df	<- haircut.get.cut.statistics(cnsc, tx, par, outdir=NA, file=NA, mode='rolling')
 		cnsc.df	<- haircut.get.cut.statistics(cnsc, tx, par, outdir=outdir, file=file, mode='rolling')		
+	}
+	if(0)	#extract just the curated contigs from file
+	{
+		indir		<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEA_data/contigs_150408/CuratedAlignmentsToRefs'
+		outdir		<- '/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_150408_model150816acur'
+		infiles 	<- data.table(FILE=list.files(indir, pattern='\\.fasta$', recursive=T, include.dirs=T))
+		infiles[, PNG_ID:= gsub('\\.fasta','',basename(FILE))]
+		infiles[, CFILE:= paste(PNG_ID,'_curated.fasta',sep='')]
+		#	extract just the curated contigs from file
+		invisible(infiles[,{
+					cat('\nprocess',FILE)
+					#FILE	<- infiles[1,FILE]
+					#CFILE	<- infiles[1,CFILE]
+					#PNG_ID	<- infiles[1,PNG_ID] 
+					cr				<- read.dna(paste(indir,'/',FILE,sep=''), format='fasta')
+					cr				<- cr[grepl(PNG_ID,rownames(cr)),]
+					rownames(cr)	<- paste(rownames(cr),'_cur',sep='')
+					cr				<- seq.rmgaps(cr, rm.only.col.gaps=0, rm.char='-', verbose=0)		
+					write.dna(cr, file=paste(outdir,CFILE,sep='/'), format='fasta', colsep='', nbcol=-1)
+					NULL
+				}, by='FILE'])
+		#	align against automatically created contigs
+		indir		<- '/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_150408_model150816a'
+		tmp		 	<- data.table(AFILE=list.files(indir, pattern='\\.fasta$', recursive=T, include.dirs=T))
+		tmp[, PNG_ID:= gsub('_wref_nohair\\.fasta','',basename(AFILE))]		
+		cat('\nNo Automated Contigs?\n', paste(setdiff(infiles[, PNG_ID], tmp[,PNG_ID]), collapse='\n'))
+		cat('\nNo Curated Contigs?\n', paste(setdiff(tmp[, PNG_ID], tmp[,PNG_ID]), collapse='\n'))
+		infiles		<- merge(infiles, tmp, by='PNG_ID')
+		infiles[, OUTFILE:= paste(PNG_ID,'_nohair_wref_wcu.fasta',sep='')]
+		
+		tmp			<- infiles[, {
+					#AFILE		<- infiles[1,AFILE]
+					#CFILE		<- infiles[1,CFILE]
+					#OUTFILE		<- infiles[1,OUTFILE]		
+					list(CMD=cmd.align.contigs.with.ref(paste(outdir,'/',CFILE,sep=''), paste(indir,'/',AFILE,sep=''), paste(outdir,'/',OUTFILE,sep='')))			
+				}, by='PNG_ID']
+		cmd			<- paste(tmp$CMD, collapse='\n')
+		cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=1, hpc.mem="5000mb")
+		cat(cmd)		
+		outfile		<- paste("hrct",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.')
+		cmd.hpccaller(paste(DATA,"tmp",sep='/'), outfile, cmd)
+		#PNG_ID	<- infiles[1,PNG_ID] 
+		
 	}
 	if(0)
 	{
@@ -332,7 +393,7 @@ pipeline.various<- function()
 	if(0)
 	{		
 		indir		<- paste(DATA, 'contigs_150408_merged_unaligned', sep='/' )
-		outdir		<- paste(DATA, 'contigs_150408_wref', sep='/' )
+		outdir		<- paste(DATA, 'contigs_150408_wref2', sep='/' )
 		batch.n		<- 200
 		tmp			<- data.table(FILE=list.files(indir, pattern='fasta$', recursive=T))
 		tmp[, BATCH:= ceiling(seq_len(nrow(tmp))/batch.n)]
