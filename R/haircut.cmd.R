@@ -50,24 +50,46 @@ cmd.various<- function(prog= PR.VARIOUS)
 #' @import data.table zoo plyr ape reshape2 ggplot2
 #' @export
 #' @example example/ex.cmd.align.contigs.with.ref.R
-cmdwrap.align.contigs.with.ref<- function(indir, outdir, reffile=NA, batch.n=NA, batch.id=NA)
+cmdwrap.align.contigs.with.ref<- function(indir.cut, indir.raw, outdir, reffile=NA, batch.n=NA, batch.id=NA)
 {
 	if(is.na(reffile))
 		reffile	<- system.file(package="PANGEAhaircut", "HIV1_COM_2012_genome_DNA_WithExtraA1UG.fasta")
-	infiles	<- data.table(INFILE=list.files(indir, pattern='fasta$',recursive=T))
-	infiles	<- subset(infiles, !grepl('Curated', INFILE))
-	infiles[, OUTFILE:= gsub('\\.fasta','_wRefs\\.fasta', gsub('_hiv|_HIV','',basename(INFILE)))]
+	infiles		<- data.table(INFILECUT=list.files(indir.cut, pattern='fasta$', recursive=T))
+	infiles[, PNG_ID:= gsub('_hiv','',gsub('\\.fasta','',gsub('_cut|_raw','',INFILECUT)))]
+	tmp			<- data.table(INFILECUT=list.files(indir.raw, pattern='fasta$', recursive=T))
+	tmp			<- data.table(INFILERAW=list.files(indir.raw, pattern='fasta$', recursive=T))
+	tmp[, PNG_ID:= gsub('_hiv','',gsub('\\.fasta','',gsub('_cut|_raw','',INFILERAW)))]
+	infiles		<- merge(infiles, tmp, all=TRUE, by='PNG_ID')
+	tmp			<- infiles[, which(is.na(INFILECUT))]	
+	infiles[, OUTFILE1:= paste(PNG_ID,'_c.fasta',sep='')]
+	infiles[, OUTFILE2:= paste(PNG_ID,'_refc.fasta',sep='')]
+	infiles[, OUTFILE3:= paste(PNG_ID,'_wRefs.fasta',sep='')]		
 	if(!is.na(batch.n) & !is.na(batch.id))
 	{
 		infiles[, BATCH:= ceiling(seq_len(nrow(infiles))/batch.n)]
 		infiles		<- subset(infiles, BATCH==batch.id)
 	}	
 	#INFILE<- '12559_1_1.fasta'
-	#OUTFILE<- '12559_1_1_wRefs.fasta'
-	#cat(cmd.align.contigs.with.ref(paste(indir,'/',INFILE,sep=''), reffile, paste(outdir,'/',OUTFILE,sep='')))
+	#OUTFILE<- '12559_1_1_wRefs.fasta'	
 	tmp		<- infiles[, {
-				list(CMD=cmd.align.contigs.with.ref(paste(indir,'/',INFILE,sep=''), reffile, paste(outdir,'/',OUTFILE,sep='')))
-			}, by='INFILE']
+				if(!is.na(INFILECUT))
+				{
+					cmd			<- cmd.add.tag.to.fasta.names( paste(indir.cut,'/',INFILECUT,sep=''), paste(outdir,'/',OUTFILE1,sep=''), tag='_cut')
+					cmd			<- paste(cmd, cmd.align.contigs.with.ref(paste(outdir,'/',OUTFILE1,sep=''), reffile, paste(outdir,'/',OUTFILE2,sep='')), sep='\n')
+					cmd			<- paste(cmd, cmd.align.contigs.with.ref(paste(indir.raw,'/',INFILERAW,sep=''), paste(outdir,'/',OUTFILE2,sep=''), paste(outdir,'/',OUTFILE3,sep='')), sep='\n')
+					tmp			<- paste(outdir,'/',OUTFILE1,sep='')
+					tmp			<- gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',tmp,fixed=T),fixed=T),fixed=T)
+					cmd			<- paste(cmd, '\n','rm ',tmp,sep='')
+					tmp			<- paste(outdir,'/',OUTFILE2,sep='')
+					tmp			<- gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',tmp,fixed=T),fixed=T),fixed=T)		
+					cmd			<- paste(cmd, '\n','rm ',tmp,sep='')									
+				}
+				if(is.na(INFILECUT))
+				{
+					cmd			<- paste(cmd, cmd.align.contigs.with.ref(paste(indir.raw,'/',INFILERAW,sep=''), reffile, paste(outdir,'/',OUTFILE3,sep='')), sep='\n')					
+				}
+				list(CMD=cmd)
+			}, by='PNG_ID']
 	cmd		<- "\n#######################################################
 # start: run cmdwrap.align.contigs.with.ref
 #######################################################"
@@ -132,6 +154,17 @@ cmd.align.contigs.with.ref<- function(infile, reffile, outfile)
 	cmd
 }
 ##--------------------------------------------------------------------------------------------------------
+##	add _cut to fasta file names
+##--------------------------------------------------------------------------------------------------------
+cmd.add.tag.to.fasta.names<- function(infile, outfile, tag)
+{
+	#mafft --reorder --anysymbol --add new_sequences --auto input
+	tmp		<- c( 	gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',infile,fixed=T),fixed=T),fixed=T),			
+					gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',outfile,fixed=T),fixed=T),fixed=T)
+					)
+	paste("sed 's/>.*/&",tag,"/' ",tmp[1]," > ",tmp[2], sep='')	
+}
+##--------------------------------------------------------------------------------------------------------
 ##	command line generator for 'haircut.call.contigs.Rscript'
 ##--------------------------------------------------------------------------------------------------------
 #' @export
@@ -168,7 +201,7 @@ cmd.haircut.call<- function(indir.st, indir.al, outdir, mfile=NA, trainfile=NA, 
 #' 	 
 #' @example example/ex.cmd.haircut.pipeline.R
 #' @export
-cmd.haircut.pipeline<- function(indir, outdir, batch.n=NA, batch.id=NA)
+cmd.haircut.pipeline<- function(indir.cut, indir.raw, outdir, batch.n=NA, batch.id=NA)
 {
 	#create specific outdir
 	cmd				<- "#######################################################
@@ -189,7 +222,7 @@ cmd.haircut.pipeline<- function(indir, outdir, batch.n=NA, batch.id=NA)
 	cmd			<- paste(cmd,"mkdir -p ",cutdir,'\n',sep='')
 	cmd			<- paste(cmd,"mkdir -p ",outdir.lcl,'\n',sep='')
 	#run alignment of references on batch into aldir
-	cmd			<- paste(cmd, cmdwrap.align.contigs.with.ref(indir, aldir, batch.n=batch.n, batch.id=batch.id), sep='')
+	cmd			<- paste(cmd, cmdwrap.align.contigs.with.ref(indir.cut, indir.raw, aldir, batch.n=batch.n, batch.id=batch.id), sep='')
 	#run cutstat on all seqs in aldir
 	cmd			<- paste(cmd, cmd.haircut.cutstat(aldir, cutdir), sep='')
 	#run call on all seqs in cutdir

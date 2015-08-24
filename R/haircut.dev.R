@@ -20,6 +20,40 @@ dev.haircut<- function()
 		OUTFILE		<- tmp[i, OUTFILE]
 		reffile		<- system.file(package="PANGEAhaircut", "HIV1_COM_2012_genome_DNA_WithExtraA1UG.fasta")
 		cat(cmd.align.contigs.with.ref(paste(indir,'/',INFILE,sep=''), reffile, paste(outdir,'/',OUTFILE,sep='')))
+		#
+		indir.cut	<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEA_data/contigs_150408/HIVcontigs_cut'
+		indir.raw	<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEA_data/contigs_150408/HIVcontigs_Raw'
+		infiles		<- data.table(INFILECUT=list.files(indir.cut, pattern='fasta$', recursive=T))
+		infiles[, PNG_ID:= gsub('_hiv','',gsub('\\.fasta','',gsub('_cut|_raw','',INFILECUT)))]
+		tmp			<- data.table(INFILECUT=list.files(indir.raw, pattern='fasta$', recursive=T))
+		tmp			<- data.table(INFILERAW=list.files(indir.raw, pattern='fasta$', recursive=T))
+		tmp[, PNG_ID:= gsub('_hiv','',gsub('\\.fasta','',gsub('_cut|_raw','',INFILERAW)))]
+		infiles		<- merge(infiles, tmp, all=TRUE, by='PNG_ID')
+		infiles[, OUTFILE1:= paste(PNG_ID,'_c.fasta',sep='')]
+		infiles[, OUTFILE2:= paste(PNG_ID,'_refc.fasta',sep='')]
+		infiles[, OUTFILE3:= paste(PNG_ID,'_wRefs.fasta',sep='')]
+		
+		i			<- infiles[, which(PNG_ID=='13554_1_14')]
+		i			<- infiles[, which(PNG_ID=='15080_1_26')]
+		i			<- infiles[, which(PNG_ID=='15070_1_8')]
+		
+		INFILECUT	<- infiles[i, INFILECUT]
+		INFILERAW	<- infiles[i, INFILERAW]
+		OUTFILE1	<- infiles[i, OUTFILE1]
+		OUTFILE2	<- infiles[i, OUTFILE2]
+		OUTFILE3	<- infiles[i, OUTFILE3]
+		reffile		<- system.file(package="PANGEAhaircut", "HIV1_COM_2012_genome_DNA_WithExtraA1UG.fasta")
+		#reffilen7	<- '/Users/Oliver/Dropbox (Infectious\ Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_150408_wref2/HIV1_COM_n7.fasta'
+		cmd			<- cmd.add.tag.to.fasta.names( paste(indir.cut,'/',INFILECUT,sep=''), paste(outdir,'/',OUTFILE1,sep=''), tag='_cut')
+		cmd			<- paste(cmd, cmd.align.contigs.with.ref(paste(outdir,'/',OUTFILE1,sep=''), reffile, paste(outdir,'/',OUTFILE2,sep='')), sep='\n')
+		cmd			<- paste(cmd, cmd.align.contigs.with.ref(paste(indir.raw,'/',INFILERAW,sep=''), paste(outdir,'/',OUTFILE2,sep=''), paste(outdir,'/',OUTFILE3,sep='')), sep='\n')
+		tmp			<- paste(outdir,'/',OUTFILE1,sep='')
+		tmp			<- gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',tmp,fixed=T),fixed=T),fixed=T)
+		cmd			<- paste(cmd, '\n','rm ',tmp,sep='')
+		tmp			<- paste(outdir,'/',OUTFILE2,sep='')
+		tmp			<- gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',tmp,fixed=T),fixed=T),fixed=T)		
+		cmd			<- paste(cmd, '\n','rm ',tmp,sep='')
+		cat(cmd)		
 	}
 	if(0)
 	{
@@ -390,17 +424,18 @@ dev.haircut<- function()
 ##--------------------------------------------------------------------------------------------------------
 pipeline.various<- function()
 {
-	if(0)
+	if(1)
 	{		
-		indir		<- paste(DATA, 'contigs_150408_merged_unaligned', sep='/' )
-		outdir		<- paste(DATA, 'contigs_150408_wref2', sep='/' )
+		indir.cut	<- paste(DATA, 'contigs_150408_unaligned_cut', sep='/' )
+		indir.raw	<- paste(DATA, 'contigs_150408_unaligned_raw', sep='/' )
+		outdir		<- paste(DATA, 'contigs_150408_wref', sep='/' )
 		batch.n		<- 200
 		tmp			<- data.table(FILE=list.files(indir, pattern='fasta$', recursive=T))
 		tmp[, BATCH:= ceiling(seq_len(nrow(tmp))/batch.n)]
 		tmp			<- tmp[, max(BATCH)]
 		for(batch.id in seq.int(1,tmp))
 		{	
-			cmd			<- cmdwrap.align.contigs.with.ref(indir, outdir, batch.n=batch.n, batch.id=batch.id)
+			cmd			<- cmdwrap.align.contigs.with.ref(indir.cut, indir.raw, outdir, batch.n=batch.n, batch.id=batch.id)
 			cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=1, hpc.mem="5000mb")
 			cat(cmd)		
 			outfile		<- paste("hrct",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.')
@@ -423,7 +458,7 @@ pipeline.various<- function()
 			cmd.hpccaller(paste(DATA,"tmp",sep='/'), paste("hrct",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)	
 		}	
 	}
-	if(1)
+	if(0)
 	{
 		indir.st	<- paste(DATA,'contigs_150408_wref_cutstat',sep='/')
 		indir.al	<- paste(DATA,'contigs_150408_wref',sep='/')
