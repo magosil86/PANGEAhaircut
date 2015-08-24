@@ -430,7 +430,7 @@ pipeline.various<- function()
 		indir.raw	<- paste(DATA, 'contigs_150408_unaligned_raw', sep='/' )
 		outdir		<- paste(DATA, 'contigs_150408_wref', sep='/' )
 		batch.n		<- 200
-		tmp			<- data.table(FILE=list.files(indir, pattern='fasta$', recursive=T))
+		tmp			<- data.table(FILE=list.files(indir.raw, pattern='fasta$', recursive=T))
 		tmp[, BATCH:= ceiling(seq_len(nrow(tmp))/batch.n)]
 		tmp			<- tmp[, max(BATCH)]
 		for(batch.id in seq.int(1,tmp))
