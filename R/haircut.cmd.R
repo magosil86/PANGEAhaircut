@@ -5,6 +5,7 @@ PR.STARTME					<- system.file(package=PR.PACKAGE, "misc", "PANGEAhaircut.startme
 PR.VARIOUS					<- paste(PR.STARTME," -exe=VARIOUS",sep='')
 
 PR.FLATTENCNTGS				<- '/Users/Oliver/git/PANGEAhaircut/inst/FlattenContigs.py'
+PR.MUSCLE					<- '/Users/Oliver/git/PANGEAhaircut/inst/muscle3.8.31_i86darwin64'
 
 #' @export
 PR.HAIRCUT.CALL				<- paste('Rscript',system.file(package=PR.PACKAGE, "haircut.call.contigs.Rscript"))
@@ -63,7 +64,9 @@ cmdwrap.align.contigs.with.ref<- function(indir.cut, indir.raw, outdir, reffile=
 	tmp			<- infiles[, which(is.na(INFILECUT))]	
 	infiles[, OUTFILE1:= paste(PNG_ID,'_c.fasta',sep='')]
 	infiles[, OUTFILE2:= paste(PNG_ID,'_refc.fasta',sep='')]
-	infiles[, OUTFILE3:= paste(PNG_ID,'_wRefs.fasta',sep='')]		
+	infiles[, OUTFILE3:= paste(PNG_ID,'_wRefs.fasta',sep='')]	
+	infiles[, OUTFILE4:= paste(PNG_ID,'_refr.fasta',sep='')]
+	infiles[, OUTFILE5:= paste(PNG_ID,'_frclen.fasta',sep='')]	
 	if(!is.na(batch.n) & !is.na(batch.id))
 	{
 		infiles[, BATCH:= ceiling(seq_len(nrow(infiles))/batch.n)]
@@ -77,12 +80,12 @@ cmdwrap.align.contigs.with.ref<- function(indir.cut, indir.raw, outdir, reffile=
 					cmd			<- cmd.add.tag.to.fasta.names( paste(indir.cut,'/',INFILECUT,sep=''), paste(outdir,'/',OUTFILE1,sep=''), tag='_cut')
 					cmd			<- paste(cmd, cmd.align.contigs.with.ref(paste(outdir,'/',OUTFILE1,sep=''), reffile, paste(outdir,'/',OUTFILE2,sep='')), sep='\n')
 					cmd			<- paste(cmd, cmd.align.contigs.with.ref(paste(indir.raw,'/',INFILERAW,sep=''), paste(outdir,'/',OUTFILE2,sep=''), paste(outdir,'/',OUTFILE3,sep='')), sep='\n')
+					cmd			<- paste(cmd, cmd.align.contigs.with.ref(paste(indir.raw,'/',INFILERAW,sep=''), paste(outdir,'/',OUTFILE2,sep=''), paste(outdir,'/',OUTFILE5,sep=''), options='--keeplength --op 0.1'), sep='\n')
+					cmd			<- paste(cmd, cmd.align.contigs.with.ref(paste(indir.raw,'/',INFILERAW,sep=''), reffile, paste(outdir,'/',OUTFILE4,sep='')), sep='\n')		
 					tmp			<- paste(outdir,'/',OUTFILE1,sep='')
 					tmp			<- gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',tmp,fixed=T),fixed=T),fixed=T)
-					cmd			<- paste(cmd, '\n','rm ',tmp,sep='')
-					tmp			<- paste(outdir,'/',OUTFILE2,sep='')
-					tmp			<- gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',tmp,fixed=T),fixed=T),fixed=T)		
-					cmd			<- paste(cmd, '\n','rm ',tmp,sep='')									
+					cmd			<- paste(cmd, '\n','rm ',tmp,sep='')		
+					cat(cmd)													
 				}
 				if(is.na(INFILECUT))
 				{
@@ -102,7 +105,7 @@ cmdwrap.align.contigs.with.ref<- function(indir.cut, indir.raw, outdir, reffile=
 ##--------------------------------------------------------------------------------------------------------
 ##	Use Chris s python script to flatten contigs in file
 ##--------------------------------------------------------------------------------------------------------
-cmd.flatten.contigs<- function(infile, infile.args, outfile, prog=PROG.FLATTENCNTGS)
+cmd.flatten.contigs<- function(infile, infile.args, outfile, prog=PR.FLATTENCNTGS)
 {	
 	tmp		<- c( 	gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',infile,fixed=T),fixed=T),fixed=T),			
 					gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',outfile,fixed=T),fixed=T),fixed=T)
@@ -134,23 +137,30 @@ cmdwrap.flatten.contigs<- function(indir, outdir)
 					cr		<- cr[, seq.int(haircut.find.nonLTRstart(cr), ncol(cr))]
 					cr		<- cr[, seq.int(1, haircut.find.lastRefSite(cr))]							
 				}					
-				tmp			<- paste(rownames(cr)[grepl(PNG_ID,rownames(cr))],collapse=' ')
-				tmp			<- cmd.flatten.contigs(paste(indir,'/',INFILEfa,sep=''), tmp, paste(outdir,'/',OUTFILE,sep=''))
+				
+				to.flatten	<- rownames(cr)[grepl(PNG_ID,rownames(cr))]
+				tmp			<- apply(as.character(cr[to.flatten,,drop=FALSE]),1,function(x) any(x!='-'))
+				to.flatten	<- to.flatten[tmp]
+				if(length(to.flatten))
+					tmp		<- cmd.flatten.contigs(paste(indir,'/',INFILEfa,sep=''), paste(to.flatten,collapse=' '), paste(outdir,'/',OUTFILE,sep=''))
+				if(!length(to.flatten))
+					tmp		<- NA_character_
+				#cat(tmp)
 				list(CMD=tmp)
 			},by='PNG_ID']
-	paste(tmp$CMD, collapse='\n')
+	subset(tmp, !is.na(CMD))[, paste(CMD, collapse='\n')]	
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	call to MAFFT to align contigs with reference compendium
 ##--------------------------------------------------------------------------------------------------------
-cmd.align.contigs.with.ref<- function(infile, reffile, outfile)
+cmd.align.contigs.with.ref<- function(infile, reffile, outfile, options='')
 {
 	#mafft --reorder --anysymbol --add new_sequences --auto input
 	tmp		<- c( 	gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',infile,fixed=T),fixed=T),fixed=T),
 			gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',reffile,fixed=T),fixed=T),fixed=T),
 			gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',outfile,fixed=T),fixed=T),fixed=T)
 	)
-	cmd		<- paste('mafft --anysymbol --add ',tmp[1],' --auto ',tmp[2],' > ',tmp[3], sep='')
+	cmd		<- paste('mafft --anysymbol ',options,' --add ',tmp[1],' --auto ',tmp[2],' > ',tmp[3], sep='')
 	cmd
 }
 ##--------------------------------------------------------------------------------------------------------

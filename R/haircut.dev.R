@@ -3,6 +3,24 @@
 
 dev.haircut<- function()	
 {
+	if(0)	#check size of alignment
+	{
+		indir		<- paste(DATA, 'contigs_150408_wref', sep='/' )
+		infiles		<- data.table(FILE=list.files(indir, pattern='fasta$', recursive=T))
+		infiles[, PNG_ID:= gsub('\\.fasta','',gsub('_wRefs','',FILE))]
+		
+		tmp			<- infiles[, {
+					#FILE		<- infiles[1,FILE]
+					tmp			<- paste(indir, FILE, sep='/')
+					tmp			<- gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',tmp,fixed=T),fixed=T),fixed=T)					
+					cmd			<- paste("awk '/^>/ {if (seqlen) print seqlen;print;seqlen=0;next} {seqlen+=length($0)}END{print seqlen}' ", tmp, sep='')
+					tmp			<- system(cmd, intern=TRUE)
+					list(LEN=max(as.numeric(tmp[substr(tmp,1,1)!='>'])))
+				}, by='PNG_ID']
+		
+		subset(tmp, LEN>12e3)
+		
+	}
 	if(0)
 	{
 		#fixup mafft
@@ -15,7 +33,7 @@ dev.haircut<- function()
 		tmp[, OUTFILE:= gsub('\\.fasta','_wRefs\\.fasta', gsub('_hiv|_HIV','',basename(INFILE)))]
 		reffile		<- system.file(package="PANGEAhaircut", "HIV1_COM_2012_genome_DNA_WithExtraA1UG.fasta")
 		
-		i			<- tmp[, which(PNG_ID=='13554_1_14')]
+		i			<- tmp[, which(PNG_ID=='12559_1_13')]
 		INFILE		<- tmp[i, INFILE]
 		OUTFILE		<- tmp[i, OUTFILE]
 		reffile		<- system.file(package="PANGEAhaircut", "HIV1_COM_2012_genome_DNA_WithExtraA1UG.fasta")
@@ -23,6 +41,7 @@ dev.haircut<- function()
 		#
 		indir.cut	<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEA_data/contigs_150408/HIVcontigs_cut'
 		indir.raw	<- '/Users/Oliver/Dropbox (Infectious Disease)/PANGEA_data/contigs_150408/HIVcontigs_Raw'
+		outdir		<- paste(DATA, 'contigs_150408_wref2', sep='/' )
 		infiles		<- data.table(INFILECUT=list.files(indir.cut, pattern='fasta$', recursive=T))
 		infiles[, PNG_ID:= gsub('_hiv','',gsub('\\.fasta','',gsub('_cut|_raw','',INFILECUT)))]
 		tmp			<- data.table(INFILECUT=list.files(indir.raw, pattern='fasta$', recursive=T))
@@ -32,27 +51,30 @@ dev.haircut<- function()
 		infiles[, OUTFILE1:= paste(PNG_ID,'_c.fasta',sep='')]
 		infiles[, OUTFILE2:= paste(PNG_ID,'_refc.fasta',sep='')]
 		infiles[, OUTFILE3:= paste(PNG_ID,'_wRefs.fasta',sep='')]
+		infiles[, OUTFILE4:= paste(PNG_ID,'_refr.fasta',sep='')]
+		infiles[, OUTFILE5:= paste(PNG_ID,'_frclen.fasta',sep='')]
 		
 		i			<- infiles[, which(PNG_ID=='13554_1_14')]
-		i			<- infiles[, which(PNG_ID=='15080_1_26')]
-		i			<- infiles[, which(PNG_ID=='15070_1_8')]
+		i			<- infiles[, which(PNG_ID=='13554_1_17')]
+		#i			<- infiles[, which(PNG_ID=='12559_1_13')]
 		
 		INFILECUT	<- infiles[i, INFILECUT]
 		INFILERAW	<- infiles[i, INFILERAW]
 		OUTFILE1	<- infiles[i, OUTFILE1]
 		OUTFILE2	<- infiles[i, OUTFILE2]
 		OUTFILE3	<- infiles[i, OUTFILE3]
+		OUTFILE4	<- infiles[i, OUTFILE4]
+		OUTFILE5	<- infiles[i, OUTFILE5]
 		reffile		<- system.file(package="PANGEAhaircut", "HIV1_COM_2012_genome_DNA_WithExtraA1UG.fasta")
 		#reffilen7	<- '/Users/Oliver/Dropbox (Infectious\ Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_150408_wref2/HIV1_COM_n7.fasta'
 		cmd			<- cmd.add.tag.to.fasta.names( paste(indir.cut,'/',INFILECUT,sep=''), paste(outdir,'/',OUTFILE1,sep=''), tag='_cut')
 		cmd			<- paste(cmd, cmd.align.contigs.with.ref(paste(outdir,'/',OUTFILE1,sep=''), reffile, paste(outdir,'/',OUTFILE2,sep='')), sep='\n')
 		cmd			<- paste(cmd, cmd.align.contigs.with.ref(paste(indir.raw,'/',INFILERAW,sep=''), paste(outdir,'/',OUTFILE2,sep=''), paste(outdir,'/',OUTFILE3,sep='')), sep='\n')
+		cmd			<- paste(cmd, cmd.align.contigs.with.ref(paste(indir.raw,'/',INFILERAW,sep=''), paste(outdir,'/',OUTFILE2,sep=''), paste(outdir,'/',OUTFILE5,sep=''), options='--keeplength --op 0.1'), sep='\n')
+		cmd			<- paste(cmd, cmd.align.contigs.with.ref(paste(indir.raw,'/',INFILERAW,sep=''), reffile, paste(outdir,'/',OUTFILE4,sep='')), sep='\n')		
 		tmp			<- paste(outdir,'/',OUTFILE1,sep='')
 		tmp			<- gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',tmp,fixed=T),fixed=T),fixed=T)
-		cmd			<- paste(cmd, '\n','rm ',tmp,sep='')
-		tmp			<- paste(outdir,'/',OUTFILE2,sep='')
-		tmp			<- gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',tmp,fixed=T),fixed=T),fixed=T)		
-		cmd			<- paste(cmd, '\n','rm ',tmp,sep='')
+		cmd			<- paste(cmd, '\n','rm ',tmp,sep='')		
 		cat(cmd)		
 	}
 	if(0)
@@ -424,7 +446,7 @@ dev.haircut<- function()
 ##--------------------------------------------------------------------------------------------------------
 pipeline.various<- function()
 {
-	if(0)
+	if(1)
 	{		
 		indir.cut	<- paste(DATA, 'contigs_150408_unaligned_cut', sep='/' )
 		indir.raw	<- paste(DATA, 'contigs_150408_unaligned_raw', sep='/' )
@@ -477,7 +499,7 @@ pipeline.various<- function()
 			cmd.hpccaller(paste(DATA,"tmp",sep='/'), paste("hrct",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)	
 		}	
 	}
-	if(1)
+	if(0)
 	{
 		#haircut.QC.flatten.curated()
 		haircut.QC.align.curated()
