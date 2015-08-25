@@ -15,7 +15,7 @@ haircutwrap.get.call.for.PNG_ID<- function(indir.st,indir.al,outdir,ctrmc,predic
 	#infiles[, BLASTnCUT:= regmatches(INFILE,regexpr('cut|raw',INFILE))]
 	#set(infiles, NULL, 'BLASTnCUT', infiles[, factor(BLASTnCUT, levels=c('cut','raw'), labels=c('Y','N'))])
 	alfiles <- data.table(ALFILE=list.files(indir.al, pattern='\\.fasta$', recursive=T))
-	alfiles	<- subset(alfiles, grepl('wRefs',FILE))
+	alfiles	<- subset(alfiles, grepl('wRefs',ALFILE))
 	alfiles[, PNG_ID:= gsub('_wRefs.*','',ALFILE)]
 	#alfiles[, BLASTnCUT:= regmatches(basename(ALFILE),regexpr('cut|raw',basename(ALFILE)))]
 	#set(alfiles, NULL, 'BLASTnCUT', alfiles[, factor(BLASTnCUT, levels=c('cut','raw'), labels=c('Y','N'))])
