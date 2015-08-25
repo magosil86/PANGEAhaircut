@@ -424,7 +424,7 @@ dev.haircut<- function()
 ##--------------------------------------------------------------------------------------------------------
 pipeline.various<- function()
 {
-	if(1)
+	if(0)
 	{		
 		indir.cut	<- paste(DATA, 'contigs_150408_unaligned_cut', sep='/' )
 		indir.raw	<- paste(DATA, 'contigs_150408_unaligned_raw', sep='/' )
@@ -476,6 +476,11 @@ pipeline.various<- function()
 			cat(cmd)		
 			cmd.hpccaller(paste(DATA,"tmp",sep='/'), paste("hrct",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)	
 		}	
+	}
+	if(1)
+	{
+		haircut.QC.flatten.curated()
+		#haircut.QC.align.curated()
 	}
 }
 ##--------------------------------------------------------------------------------------------------------
