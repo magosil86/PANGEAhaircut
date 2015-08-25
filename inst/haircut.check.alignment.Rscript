@@ -1,0 +1,93 @@
+cat("#######################################################
+# haircut.check.alignment
+# This is version 150825.	
+#######################################################")
+args <- commandArgs()
+if(!any(args=='--args'))
+	args<- vector("numeric",0)
+if(any(args=='--args'))
+	args<- args[-(1:match("--args", args)) ]
+#	default args
+verbose			<- 1
+indir			<- NA
+outdir			<- NA
+batch.n			<- NA
+batch.id		<- NA
+if(length(args))
+{
+	#	args input			
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,6),
+								indir= return(substr(arg,8,nchar(arg))),NA)	}))
+	if(length(tmp)>0) indir<- tmp[1]			
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,7),
+								outdir= return(substr(arg,9,nchar(arg))),NA)	}))
+	if(length(tmp)>0) outdir<- tmp[1]			
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,8),
+								batch.n= return(as.numeric(substr(arg,10,nchar(arg)))),NA)	}))
+	if(length(tmp)>0) batch.n<- tmp[1]
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,9),
+								batch.id= return(as.numeric(substr(arg,11,nchar(arg)))),NA)	}))
+	if(length(tmp)>0) batch.id<- tmp[1]
+}
+if( is.na(indir) || is.na(outdir))
+{
+	stop('\nUsage:
+					Rscript haircut.check.alignment -indir=INDIR -outdir=OUTDIR [-batch.n=BATCHN -batch.id=BATCHID]
+					where
+					INDIR\tdirectory of contigs in fasta format, aligned to references
+					OUTDIR\toutput directory
+					BATCHN\tOptional: Number of PANGEA_IDs to process in parallel 
+					BATCHID\tOptional: Batch ID of PANGEA_IDs that are processed in parallel
+					')
+}
+if(verbose)
+{
+	cat('\ninput args\n',paste(indir, outdir, batch.n, batch.id, sep='\n'))
+}
+###############################################################################
+#	helper functions for debugging
+my.dumpframes<- function()
+{
+	geterrmessage()
+	dump.frames()
+	cat(paste("\nmy.dumpframes dump 'last.dump' to file",paste(getwd(),paste("debug_",paste(strsplit(date(),' ')[[1]],collapse='_'),".rda\n",sep=''),sep='/')))
+	save(last.dump, file=paste(getwd(),paste("debug_",paste(strsplit(date(),' ')[[1]],collapse='_'),".rda",sep=''),sep='/'))
+	q()
+}
+###############################################################################
+#	set debugging
+options(error= my.dumpframes)	
+###############################################################################
+#	run script
+require(PANGEAhaircut)
+infiles		<- data.table(FILE=list.files(indir, pattern='fasta$', recursive=T))
+infiles[, PNG_ID:= gsub('\\.fasta','',gsub('_frclen|_refc|_refr|_wRefs','',FILE))]
+infiles[, AL_TYPE:= gsub('_*','',gsub('\\.fasta','',gsub('[0-9]*','',FILE)))]				
+tmp			<- infiles[, {
+			#FILE		<- infiles[1,FILE]
+			tmp			<- paste(indir, FILE, sep='/')
+			tmp			<- gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',tmp,fixed=T),fixed=T),fixed=T)					
+			cmd			<- paste("awk '/^>/ {if (seqlen) print seqlen;print;seqlen=0;next} {seqlen+=length($0)}END{print seqlen}' ", tmp, sep='')
+			tmp			<- system(cmd, intern=TRUE)					
+			list(LEN=as.numeric(tmp[2]))
+		}, by='FILE']
+infiles		<- merge(infiles, tmp, by='FILE')		
+tmp			<- dcast.data.table(infiles, PNG_ID~AL_TYPE, value.var='LEN')
+#	suspect that raw is in reverse if alignment length is larger than 12k		
+stopifnot( nrow(subset(tmp, wRefs>12e3 & refc>12e3))==0 )
+#	mv refc to wRefs in case wRef length > 12e3
+alfixup		<- merge(subset(tmp, wRefs>12e3 & refc<=12e3, PNG_ID), infiles, by='PNG_ID')
+if(nrow(alfixup)>0)
+{
+	cat('\nChanging wRef.fasta to cut alignment for n=', nrow(alfixup))
+	alfixup		<- dcast.data.table(alfixup, PNG_ID~AL_TYPE, value.var='FILE')
+	alfixup[, {
+				file.rename( paste(indir,wRefs,sep='/'), paste(indir,gsub('wRefs\\.fasta','fndrvs\\.fasta',wRefs),sep='/'))
+				file.copy( paste(indir,refc,sep='/'), paste(indir,gsub('refc\\.fasta','wRefs\\.fasta',wRefs),sep='/'), overwrite=TRUE)
+				NULL
+			}, by='PNG_ID']
+}

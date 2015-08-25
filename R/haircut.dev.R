@@ -7,19 +7,30 @@ dev.haircut<- function()
 	{
 		indir		<- paste(DATA, 'contigs_150408_wref', sep='/' )
 		infiles		<- data.table(FILE=list.files(indir, pattern='fasta$', recursive=T))
-		infiles[, PNG_ID:= gsub('\\.fasta','',gsub('_wRefs','',FILE))]
-		
+		infiles[, PNG_ID:= gsub('\\.fasta','',gsub('_frclen|_refc|_refr|_wRefs','',FILE))]
+		infiles[, AL_TYPE:= gsub('_*','',gsub('\\.fasta','',gsub('[0-9]*','',FILE)))]				
 		tmp			<- infiles[, {
 					#FILE		<- infiles[1,FILE]
 					tmp			<- paste(indir, FILE, sep='/')
 					tmp			<- gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',tmp,fixed=T),fixed=T),fixed=T)					
 					cmd			<- paste("awk '/^>/ {if (seqlen) print seqlen;print;seqlen=0;next} {seqlen+=length($0)}END{print seqlen}' ", tmp, sep='')
-					tmp			<- system(cmd, intern=TRUE)
-					list(LEN=max(as.numeric(tmp[substr(tmp,1,1)!='>'])))
-				}, by='PNG_ID']
+					tmp			<- system(cmd, intern=TRUE)					
+					list(LEN=as.numeric(tmp[2]))
+				}, by='FILE']
+		infiles		<- merge(infiles, tmp, by='FILE')		
+		tmp			<- dcast.data.table(infiles, PNG_ID~AL_TYPE, value.var='LEN')
+		#	suspect that raw is in reverse if alignment length is larger than 12k		
+		stopifnot( nrow(subset(tmp, wRefs>12e3 & refc>12e3))==0 )
+		#	mv refc to wRefs in case wRef length > 12e3
+		alfixup		<- merge(subset(tmp, wRefs>12e3 & refc<=12e3, PNG_ID), infiles, by='PNG_ID')
+		alfixup		<- dcast.data.table(alfixup, PNG_ID~AL_TYPE, value.var='FILE')
+		alfixup[, {
+						file.rename( paste(indir,wRefs,sep='/'), paste(indir,gsub('wRefs\\.fasta','fndrvs\\.fasta',wRefs),sep='/'))
+						file.copy( paste(indir,refc,sep='/'), paste(indir,gsub('refc\\.fasta','wRefs\\.fasta',wRefs),sep='/'), overwrite=TRUE)
+						NULL
+				}, by='PNG_ID']		
 		
-		subset(tmp, LEN>12e3)
-		
+		cat(cmd.haircut.check.alignment(indir, indir))
 	}
 	if(0)
 	{

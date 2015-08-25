@@ -12,6 +12,8 @@ PR.HAIRCUT.CALL				<- paste('Rscript',system.file(package=PR.PACKAGE, "haircut.c
 #' @export
 PR.HAIRCUT.CUTSTAT			<- paste('Rscript',system.file(package=PR.PACKAGE, "haircut.cutstat.contigs.Rscript"))
 #' @export
+PR.HAIRCUT.CHCKAL			<- paste('Rscript',system.file(package=PR.PACKAGE, "haircut.check.alignment.Rscript"))
+#' @export
 HPC.MPIRUN					<- {tmp<- c("mpirun","mpiexec"); names(tmp)<- c("debug","cx1.hpc.ic.ac.uk"); tmp}
 #' @export
 HPC.CX1.IMPERIAL			<- "cx1.hpc.ic.ac.uk"		#this is set to system('domainname',intern=T) for the hpc cluster of choice
@@ -244,6 +246,25 @@ cmd.haircut.pipeline<- function(indir.cut, indir.raw, outdir, batch.n=NA, batch.
 #
 # end: run haircut.pipeline
 #
+#######################################################\n",sep='')
+	cmd
+}
+##--------------------------------------------------------------------------------------------------------
+##	command line generator for 'haircut.check.alignment.Rscript'
+##--------------------------------------------------------------------------------------------------------
+#' @export
+cmd.haircut.check.alignment<- function(indir, outdir, batch.n=NA, batch.id=NA, prog=PR.HAIRCUT.CHCKAL )	
+{
+	cmd<- "\n#######################################################
+# start: run haircut.check.alignment.Rscript
+#######################################################"
+	cmd		<- paste(cmd, paste("\necho \'run ",prog,"\'\n",sep=''))
+	cmd		<- paste(cmd, paste(prog,' -indir=',indir,' -outdir=',outdir, sep=''))
+	if(!is.na(batch.n) & !is.na(batch.id))
+		cmd	<- paste(cmd, ' -batch.n=',batch.n, ' -batch.id=',batch.id, sep='')
+	cmd		<- paste('\n',cmd,paste("\necho \'end ",prog,"\'\n",sep=''))
+	cmd		<- paste(cmd,"#######################################################
+# end: run haircut.check.alignment.Rscript
 #######################################################\n",sep='')
 	cmd
 }
