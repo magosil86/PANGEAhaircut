@@ -235,6 +235,8 @@ cmd.haircut.pipeline<- function(indir.cut, indir.raw, outdir, batch.n=NA, batch.
 	cmd			<- paste(cmd,"mkdir -p ",outdir.lcl,'\n',sep='')
 	#run alignment of references on batch into aldir
 	cmd			<- paste(cmd, cmdwrap.align.contigs.with.ref(indir.cut, indir.raw, aldir, batch.n=batch.n, batch.id=batch.id), sep='')
+	#check alignments and decide which one to keep
+	cmd			<- paste(cmd, cmd.haircut.check.alignment(aldir, aldir), sep='')
 	#run cutstat on all seqs in aldir
 	cmd			<- paste(cmd, cmd.haircut.cutstat(aldir, cutdir), sep='')
 	#run call on all seqs in cutdir
@@ -259,7 +261,7 @@ cmd.haircut.check.alignment<- function(indir, outdir, batch.n=NA, batch.id=NA, p
 # start: run haircut.check.alignment.Rscript
 #######################################################"
 	cmd		<- paste(cmd, paste("\necho \'run ",prog,"\'\n",sep=''))
-	cmd		<- paste(cmd, paste(prog,' -indir=',indir,' -outdir=',outdir, sep=''))
+	cmd		<- paste(cmd, paste(prog,' -indir=',gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',indir,fixed=T),fixed=T),fixed=T),' -outdir=',gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',outdir,fixed=T),fixed=T),fixed=T), sep=''))
 	if(!is.na(batch.n) & !is.na(batch.id))
 		cmd	<- paste(cmd, ' -batch.n=',batch.n, ' -batch.id=',batch.id, sep='')
 	cmd		<- paste('\n',cmd,paste("\necho \'end ",prog,"\'\n",sep=''))

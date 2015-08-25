@@ -82,12 +82,13 @@ stopifnot( nrow(subset(tmp, wRefs>12e3 & refc>12e3))==0 )
 #	mv refc to wRefs in case wRef length > 12e3
 alfixup		<- merge(subset(tmp, wRefs>12e3 & refc<=12e3, PNG_ID), infiles, by='PNG_ID')
 if(nrow(alfixup)>0)
-{
-	cat('\nChanging wRef.fasta to cut alignment for n=', nrow(alfixup))
+{	
 	alfixup		<- dcast.data.table(alfixup, PNG_ID~AL_TYPE, value.var='FILE')
+	cat('\nChanging wRef.fasta to cut alignment for n=', nrow(alfixup))
 	alfixup[, {
 				file.rename( paste(indir,wRefs,sep='/'), paste(indir,gsub('wRefs\\.fasta','fndrvs\\.fasta',wRefs),sep='/'))
 				file.copy( paste(indir,refc,sep='/'), paste(indir,gsub('refc\\.fasta','wRefs\\.fasta',wRefs),sep='/'), overwrite=TRUE)
 				NULL
 			}, by='PNG_ID']
 }
+NULL

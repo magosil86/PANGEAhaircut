@@ -15,6 +15,7 @@ haircutwrap.get.call.for.PNG_ID<- function(indir.st,indir.al,outdir,ctrmc,predic
 	#infiles[, BLASTnCUT:= regmatches(INFILE,regexpr('cut|raw',INFILE))]
 	#set(infiles, NULL, 'BLASTnCUT', infiles[, factor(BLASTnCUT, levels=c('cut','raw'), labels=c('Y','N'))])
 	alfiles <- data.table(ALFILE=list.files(indir.al, pattern='\\.fasta$', recursive=T))
+	alfiles	<- subset(alfiles, grepl('wRefs',FILE))
 	alfiles[, PNG_ID:= gsub('_wRefs.*','',ALFILE)]
 	#alfiles[, BLASTnCUT:= regmatches(basename(ALFILE),regexpr('cut|raw',basename(ALFILE)))]
 	#set(alfiles, NULL, 'BLASTnCUT', alfiles[, factor(BLASTnCUT, levels=c('cut','raw'), labels=c('Y','N'))])
@@ -382,13 +383,13 @@ haircutwrap.get.cut.statistics<- function(indir, par, outdir=indir, batch.n=NA, 
 	#	read just one file
 	#	determine statistics for each contig after LTR
 	infiles		<- data.table(FILE=list.files(indir, pattern='fasta$', recursive=T))
+	infiles		<- subset(infiles, grepl('wRefs',FILE))
 	infiles[, PNG_ID:= gsub('_wRefs\\.fasta','',gsub('_cut|_raw','',FILE))]
 	if(!is.na(batch.n) & !is.na(batch.id))
 	{
 		infiles[, BATCH:= ceiling(seq_len(nrow(infiles))/batch.n)]
 		infiles		<- subset(infiles, BATCH==batch.id)
-	}
-	
+	}	
 	#	check which contigs not yet processed
 	infiles		<- merge(infiles, infiles[, {
 						file	<- paste(indir, FILE, sep='/')

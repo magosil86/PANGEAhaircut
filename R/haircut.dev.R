@@ -457,7 +457,7 @@ dev.haircut<- function()
 ##--------------------------------------------------------------------------------------------------------
 pipeline.various<- function()
 {
-	if(1)
+	if(0)
 	{		
 		indir.cut	<- paste(DATA, 'contigs_150408_unaligned_cut', sep='/' )
 		indir.raw	<- paste(DATA, 'contigs_150408_unaligned_raw', sep='/' )
@@ -475,12 +475,12 @@ pipeline.various<- function()
 			cmd.hpccaller(paste(DATA,"tmp",sep='/'), outfile, cmd)	
 		}
 	}
-	if(0)
+	if(1)
 	{
 		indir		<- paste(DATA, 'contigs_150408_wref', sep='/' )
 		outdir		<- paste(DATA, 'contigs_150408_wref_cutstat', sep='/' )		
 		batch.n		<- 200
-		tmp			<- data.table(FILE=list.files(indir, pattern='fasta$', recursive=T))
+		tmp			<- data.table(FILE=list.files(indir, pattern='wRefs\\.fasta$', recursive=T))
 		tmp[, BATCH:= ceiling(seq_len(nrow(tmp))/batch.n)]
 		tmp			<- tmp[, max(BATCH)]
 		for(batch.id in seq.int(1,tmp))
@@ -499,7 +499,7 @@ pipeline.various<- function()
 		trainfile	<- paste(DATA,'contigs_150408_trainingset_subsets.R',sep='/')
 		batch.n		<- 200
 		
-		tmp			<- data.table(INFILE=list.files(indir.st, pattern='\\.R$', recursive=T))
+		tmp			<- data.table(INFILE=list.files(indir.al, pattern='wRefs\\.fasta$', recursive=T))
 		tmp[, BATCH:= ceiling(seq_len(nrow(tmp))/batch.n)]
 		tmp			<- tmp[, max(BATCH)]
 		for(batch.id in seq.int(1,tmp))
