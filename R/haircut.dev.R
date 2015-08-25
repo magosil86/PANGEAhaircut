@@ -479,8 +479,8 @@ pipeline.various<- function()
 	}
 	if(1)
 	{
-		haircut.QC.flatten.curated()
-		#haircut.QC.align.curated()
+		#haircut.QC.flatten.curated()
+		haircut.QC.align.curated()
 	}
 }
 ##--------------------------------------------------------------------------------------------------------

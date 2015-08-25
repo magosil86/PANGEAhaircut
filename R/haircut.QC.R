@@ -89,7 +89,7 @@ haircut.QC.flatten.curated<- function()
 	outdir		<- paste(DATA,'contigs_150408_curatedflat',sep='/')
 	infiles 	<- data.table(FILE=list.files(indir, pattern='\\.fasta$', recursive=T, include.dirs=T))
 	infiles[, PNG_ID:= gsub('_nLTR','',gsub('\\.fasta','',basename(FILE)))]
-	infiles[, CFILE:= paste(PNG_ID,'_curated.fasta',sep='')]
+	infiles[, CFILE:= gsub('\\.fasta','_flat\\.fasta',FILE)]
 	#	extract just the curated contigs from file
 	invisible(infiles[,{
 						cat('\nprocess',FILE)
@@ -107,14 +107,15 @@ haircut.QC.flatten.curated<- function()
 ##--------------------------------------------------------------------------------------------------------
 haircut.QC.align.curated<- function()
 {
-	indir		<- paste(DATA,'contigs_150408_curated',sep='/')
-	outdir		<- paste(DATA,'contigs_150408_curatedflat',sep='/')
-	infiles 	<- data.table(FILE=list.files(indir, pattern='\\.fasta$', recursive=T, include.dirs=T))
-	infiles[, PNG_ID:= gsub('_nLTR','',gsub('\\.fasta','',basename(FILE)))]
-	infiles[, CFILE:= paste(PNG_ID,'_curated.fasta',sep='')]
+	batch.n		<- 200
+	indirc		<- paste(DATA,'contigs_150408_curatedflat',sep='/')
+	indira		<- paste(DATA,'/contigs_150408_model150816a',sep='/')
+	outdir		<- paste(DATA,'contigs_150408_model150816a_cf',sep='/')
+	infiles 	<- data.table(FILE=list.files(indirc, pattern='\\.fasta$', recursive=T))
+	infiles[, PNG_ID:= gsub('_flat','',gsub('_nLTR','',gsub('\\.fasta','',basename(FILE))))]	
 	#	align against automatically created contigs
-	indir		<- paste(DATA,'/contigs_150408_model150816a',sep='/')
-	tmp		 	<- data.table(AFILE=list.files(indir, pattern='\\.fasta$', recursive=T, include.dirs=T))
+	
+	tmp		 	<- data.table(AFILE=list.files(indira, pattern='\\.fasta$', recursive=T))
 	tmp[, PNG_ID:= gsub('_wref_nohair\\.fasta','',basename(AFILE))]		
 	cat('\nNO AUTOMATED CONTIGS?\n', paste(setdiff(infiles[, PNG_ID], tmp[,PNG_ID]), collapse='\n'))
 	infiles		<- merge(infiles, tmp, by='PNG_ID')
@@ -124,11 +125,14 @@ haircut.QC.align.curated<- function()
 				#AFILE		<- infiles[1,AFILE]
 				#CFILE		<- infiles[1,CFILE]
 				#OUTFILE		<- infiles[1,OUTFILE]		
-				list(CMD=cmd.align.contigs.with.ref(paste(outdir,'/',CFILE,sep=''), paste(indir,'/',AFILE,sep=''), paste(outdir,'/',OUTFILE,sep='')))			
+				list(CMD=cmd.align.contigs.with.ref(paste(indirc,'/',FILE,sep=''), paste(indira,'/',AFILE,sep=''), paste(outdir,'/',OUTFILE,sep='')))			
 			}, by='PNG_ID']
-	cmd			<- paste(tmp$CMD, collapse='\n')
-	cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=1, hpc.mem="5000mb")
-	cat(cmd)		
-	outfile		<- paste("hrct",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.')
-	cmd.hpccaller(paste(DATA,"tmp",sep='/'), outfile, cmd)
+	tmp[, BATCH:= ceiling(seq_len(nrow(tmp))/batch.n)]
+	for(batch.id in seq.int(1,tmp[, max(BATCH)]))
+	{			
+		cmd			<- subset(tmp, BATCH==batch.id)[, paste(CMD, collapse='\n')] 				
+		cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=4, hpc.mem="5000mb")
+		cat(cmd)		
+		cmd.hpccaller(paste(DATA,"tmp",sep='/'), paste("hrct",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)	
+	}
 }
