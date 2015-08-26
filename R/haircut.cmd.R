@@ -240,7 +240,7 @@ cmd.haircut.pipeline<- function(indir.cut, indir.raw, outdir, batch.n=NA, batch.
 	#run cutstat on all seqs in aldir
 	cmd			<- paste(cmd, cmd.haircut.cutstat(aldir, cutdir), sep='')
 	#run call on all seqs in cutdir
-	cmd			<- paste(cmd, cmd.haircut.call(cutdir, indir, outdir.lcl), sep='')
+	cmd			<- paste(cmd, cmd.haircut.call(cutdir, aldir, outdir.lcl), sep='')
 	#copy to destination
 	cmd			<- paste(cmd, "\nmv ",outdir.lcl,"/* ",outdir,"\n",sep='')
 	cmd			<- paste(cmd, "rm -d ",aldir," ",outdir.lcl," ",cutdir,"\n",sep='')
