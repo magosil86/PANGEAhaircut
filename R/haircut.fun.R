@@ -133,7 +133,7 @@ haircut.get.call.for.PNG_ID<- function(indir.st, indir.al, png_id, files, alfile
 	cr		<- cr[, seq.int(haircut.find.nonLTRstart(cr), ncol(cr))]
 	cr		<- cr[, seq.int(1, haircut.find.lastRefSite(cr))]
 	#	check that coverage is >1 amongst references for long enough
-	if(!is.na(par['PRCALL.mxgpinref']) && nrow(cnsc.1s))
+	if(!is.na(par['PRCALL.mxgpinref']) && nrow(cnsc.df) && nrow(cr))
 	{
 		rp		<- haircut.get.frequencies(cr[!grepl(png_id,rownames(cr)), ], bases=c('a','c','g','t','-'))
 		rp		<- subset(rp, BASE=='-', select=c(SITE, COV, FRQ))
