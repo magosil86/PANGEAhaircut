@@ -254,7 +254,9 @@ cmd.haircut.pipeline<- function(indir.cut, indir.raw, outdir, batch.n=NA, batch.
 ##--------------------------------------------------------------------------------------------------------
 ##	command line generator for 'haircut.check.alignment.Rscript'
 ##--------------------------------------------------------------------------------------------------------
+#' @title Check the raw/cut/ref alignment
 #' @export
+#' @example example/ex.cmd.haircut.check.alignment.R
 cmd.haircut.check.alignment<- function(indir, outdir, batch.n=NA, batch.id=NA, prog=PR.HAIRCUT.CHCKAL )	
 {
 	cmd<- "\n#######################################################

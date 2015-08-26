@@ -34,12 +34,15 @@ library(help=PANGEAhaircut)
 ```
 
 # Content:
+* Function `cmdwrap.align.contigs.with.ref` to align cut and raw IVA contigs against a set of reference HIV sequences. This function can be called from within R, from the command line, and on an HPC system. See `?cmdwrap.align.contigs.with.ref` for help.
+
+* Function `cmd.haircut.check.alignment` to check the alignment of cut and raw IVA contigs against a set of references. See `?cmd.haircut.check.alignment` for help.
 
 * Function `haircutwrap.get.cut.statistics` to compute descriptive statistics that are used to calculate the call probability. This function can be called from within R, from the command line, and on an HPC system. See `?haircutwrap.get.cut.statistics` for help.
 
 * Function `haircutwrap.get.call.for.PNG_ID` to call 10 bp long chunks of cut/raw contigs, based on descriptive statistics of the contigs and the consensus sequence. This function can be called from within R, from the command line, and on an HPC system. See `?haircutwrap.get.call.for.PNG_ID` for help.
 
-* Function `cmd.haircut.pipeline` that combines the above two steps. This produces a UNIX bash script that can be submitted to an HPC system. E.g. typing in R:
+* Function `cmd.haircut.pipeline` that combines the above steps. This produces a UNIX bash script that can be submitted to an HPC system. E.g. typing in R:
 
 ```
 #DATA		<- SET THIS DIRECTORY

@@ -1,4 +1,15 @@
 #
+#	run from command line 
+#	this produces a command line string that can be run in UNIX alikes
+#
+\dontrun{
+	
+indir.cut	<- paste(DATA, 'contigs_150408_unaligned_cut', sep='/' )
+indir.raw	<- paste(DATA, 'contigs_150408_unaligned_raw', sep='/' )
+outdir		<- paste(DATA, 'contigs_150408_model150816a', sep='/' )		
+cat(cmd.haircut.pipeline(indir.cut, indir.raw, outdir, batch.n=200, batch.id=1))
+}
+#
 #	create multiple runs on HPC using the command line version
 #
 \dontrun{
