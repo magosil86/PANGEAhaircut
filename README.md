@@ -156,7 +156,7 @@ mu >= min(0.8, muc - 10 * std dev (muc))
 This rule accounts for heterogeneity across the HIV genome. In env and especially the V loops, we expect substantial site variation. At these sites, the calling probability of the consensus sequences is much lower than in more conserved gene regions. Therefore, the above approach calls sites much less stringently at known sites of the genome that are associated with substantial variation. 
 
 ## Curating called sites into long chunks
-Across each cut/raw contig, neighbouring sites may be called or not called, if the *mu* is close to the threshold. We define
+Across each cut/raw contig, neighbouring sites may be called or not called, if *mu* is close to the threshold. We define
 * called regions of a cut/raw contig as any set of called sites that is not separated by more than 300 bp. The value of 300 bp corresponds to the short read length.
 * hair as called sites that are either at the start or the end of a called region
 * internal calls as called sites that are not hair
