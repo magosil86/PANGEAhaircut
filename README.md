@@ -144,4 +144,29 @@ Denote this probability by *mu*. The model is
 
 E logit(mu) = b0 + spAGR * b1 + sGAP * b2.
 
-The probability *mu* differs for each site and depends on the site specific values *spAGR* and *sGAP*. The parameters b0, b1, b2 are fitted through Beta Binomial regression on ~3,000 contigs that Chris Wymant curated manually in April 2015. The parameters are learned independently for each consecutive 10 base pair chunk. Thus, the calling probability is quite local.
+The probability *mu* differs for each site and depends on the site specific values *spAGR* and *sGAP*. The parameters b0, b1, b2 are fitted through Beta Binomial regression on ~3,000 contigs that Chris Wymant curated manually in April 2015. The parameters are learned independently for each consecutive 10 base pair chunk. Thus, the calling probability is quite local. Potential caveat: if the cut/ref/raw alignment contains large insertions, then the site in the alignment do not correspond to the sites of the model parameters b0, b1, b2. The script removes all insertions that are only present amongst the cut/raw contigs and are longer 100 sites. All such cases corresponded to reverse raw contigs. The value 100 is chosen because the longest insertion in the reference HIV compendium is about 100 bp. Once these insertions are removed, the coordinates of the descriptive statistics correspond to the coordinates of the model parameters.
+
+## Calling sites i. e. no haircut
+A particular site of a cut/raw contig is called (that is not deleted), if the calling probability at that site if
+* it is larger than 0.80, or
+* if it is not more than 10 standard deviations below the calling probability of the consensus (*muc*)
+
+mu >= min(0.8, muc - 10 * std dev (muc))
+
+This rule accounts for heterogeneity across the HIV genome. In env and especially the V loops, we expect substantial site variation. At these sites, the calling probability of the consensus sequences is much lower than in more conserved gene regions. Therefore, the above approach calls sites much less stringently at known sites of the genome that are associated with substantial variation. 
+
+## Curating called sites into long chunks
+Across each cut/raw contig, neighbouring sites may be called or not called, if the *mu* is close to the threshold. We define
+* called regions of a cut/raw contig as any set of called sites that is not separated by more than 300 bp. The value of 300 bp corresponds to the short read length.
+* hair as called sites that are either at the start or the end of a called region
+* internal calls as called sites that are not hair
+* gaps as uncalled sites
+
+Then,
+* gaps between internal calls are called if they are shorter than 100 bp.
+* gaps between internal calls are called if they occur after position 9,700
+* hair is removed if it less than 150 bp long. This is half the length of a short read.
+* any remaining called sites of less than 50bp are removed.
+
+Finally, 
+* the script checks if call cut/raw contigs correspond to each other. If this is the case, only the longer one is called.
