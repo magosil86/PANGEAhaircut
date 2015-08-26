@@ -513,6 +513,7 @@ pipeline.various<- function()
 	if(0)
 	{
 		#haircut.QC.flatten.curated()
+		haircut.QC.flatten.automated()
 		haircut.QC.align.curated()
 	}
 }
@@ -579,7 +580,8 @@ prog.haircut.150806<- function()
 		indir.al<- paste(DATA,'contigs_150408_wref',sep='/')
 		outdir	<- paste(DATA,'contigs_150408_model150816a',sep='/')
 		par		<- c(	'FRQx.quantile'=NA, 'FRQx.thr'=NA, 'CNS_FRQ.window'=200, 'CNS_AGR.window'=200, 'GPS.window'=200, 
-				'PRCALL.thrmax'=0.8, 'PRCALL.thrstd'=10, 'PRCALL.cutprdcthair'=150, 'PRCALL.cutprdctcntg'=50, 'PRCALL.cutrawgrace'=100, 'PRCALL.rmintrnlgpsblw'=100 ,'PRCALL.rmintrnlgpsend'=9700)
+				'PRCALL.thrmax'=0.8, 'PRCALL.thrstd'=10, 'PRCALL.cutprdcthair'=150, 'PRCALL.cutprdctcntg'=50, 'PRCALL.cutrawgrace'=100, 'PRCALL.rmintrnlgpsblw'=100 ,'PRCALL.rmintrnlgpsend'=9700,
+				'PRCALL.mxgpinref'=100)
 		haircutwrap.get.call.for.PNG_ID(indir.st,indir.al,outdir,ctrmc,predict.fun,par,ctrain=ctrain)
 	}
 }

@@ -2,8 +2,8 @@
 haircut.QC.flatten.automated<- function()
 {
 	#	flatten automated contigs
-	indir		<- '/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_150408_model150816a'
-	outdira		<- '/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_150408_model150816aflat'
+	indir		<- paste(DATA,'contigs_150408_model150816a',sep='/')
+	outdira		<- paste(DATA,'contigs_150408_model150816aflat',sep='/')
 	cmd			<- cmdwrap.flatten.contigs(indir, outdira)	
 	outfile		<- paste("hrqc",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.')
 	cmd.hpccaller(paste(DATA,"tmp",sep='/'), outfile, cmd)		

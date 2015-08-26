@@ -51,7 +51,7 @@ haircutwrap.get.call.for.PNG_ID<- function(indir.st,indir.al,outdir,ctrmc,predic
 					#PNG_ID<- png_id	<- '14760_1_1'
 					#PNG_ID<- png_id	<- '15034_1_75'
 					#PNG_ID<- png_id	<- '14944_1_17'
-					PNG_ID<- png_id	<- '13554_1_14'
+					PNG_ID<- png_id	<- '15173_1_56'
 					files	<- subset(infiles, PNG_ID==png_id)[, INFILE]
 					alfiles	<- subset(infiles, PNG_ID==png_id)[, ALFILE]								
 					tmp		<- haircut.get.call.for.PNG_ID(indir.st, indir.al, png_id, files, alfiles, par, ctrmc, predict.fun)
@@ -132,6 +132,29 @@ haircut.get.call.for.PNG_ID<- function(indir.st, indir.al, png_id, files, alfile
 	cr		<- read.dna(file=paste(indir.al,alfiles,sep='/'), format='fasta')
 	cr		<- cr[, seq.int(haircut.find.nonLTRstart(cr), ncol(cr))]
 	cr		<- cr[, seq.int(1, haircut.find.lastRefSite(cr))]
+	#	check that coverage is >1 amongst references for long enough
+	if(!is.na(par['PRCALL.mxgpinref']) && nrow(cnsc.1s))
+	{
+		rp		<- haircut.get.frequencies(cr[!grepl(png_id,rownames(cr)), ], bases=c('a','c','g','t','-'))
+		rp		<- subset(rp, BASE=='-', select=c(SITE, COV, FRQ))
+		rp[, COV_NOGP:= COV-FRQ*COV]
+		rp[, GPinREF:= as.integer(COV_NOGP<1)]	
+		tmp		<- rp[, gregexpr('1+',paste(GPinREF,collapse=''))[[1]]]
+		rp[, paste(GPinREF,collapse='')]
+		rp		<- data.table(CALL_ID= seq_along(tmp), CALL_POS=as.integer(tmp), CALL_LEN=attr(tmp, 'match.length'))
+		rp		<- subset(rp, CALL_LEN>par['PRCALL.mxgpinref'])
+		rp		<- rp[, CALL_LAST:=CALL_POS+CALL_LEN-1L]
+		setkey(rp, CALL_POS)
+		for(i in rev(seq_len(nrow(rp))))
+		{
+			cat('\nFound large gap in references at pos', rp[i,CALL_POS],'-',rp[i,CALL_LAST],'setting all CALLS to 0')
+			cnsc.df	<- subset(cnsc.df, SITE<rp$CALL_POS[i] | SITE>rp$CALL_LAST[i])
+			tmp		<- cnsc.df[, which(SITE>rp$CALL_LAST[i])]
+			set(cnsc.df, tmp, 'SITE', cnsc.df[tmp, SITE-rp$CALL_LEN[i]])			
+			cr		<- cr[, setdiff(seq_len(ncol(cr)), rp[i,seq.int(CALL_POS,CALL_LAST)])]
+			stopifnot( cnsc.df[,max(SITE)]<=ncol(cr) )
+		}		
+	}	
 	#	get contig table
 	tmp		<- rownames(cr)[grepl(png_id,rownames(cr))]						
 	tx		<- data.table(		TAXON=tmp, 
@@ -186,7 +209,7 @@ haircut.get.call.for.PNG_ID<- function(indir.st, indir.al, png_id, files, alfile
 				geom_line(aes(y=CNS_GPS), colour='orange') +
 				geom_line(aes(y=FRQ), colour='green') +
 				geom_line(aes(y=GPS), colour='DarkGreen')
-	} 	
+	} 		
 	#	determine predicted sites
 	cnsc.1s	<- cnsc.df[, {
 				z	<- gsub('0*$','',paste(CALL,collapse=''))
@@ -321,7 +344,7 @@ haircut.get.call.for.PNG_ID<- function(indir.st, indir.al, png_id, files, alfile
 			set(cnsc.df, cnsc.df[, which( TAXON==cnsc.1s$TAXON[i] & BLASTnCUT==cnsc.1s$BLASTnCUT[i] & SITE>=cnsc.1s$CALL_POS[i] & SITE<=cnsc.1s$CALL_LAST[i])], 'CALL', 0L)
 		}										
 		cnsc.1s	<- subset(cnsc.1s, !is.na(CALL_ID))								
-	}
+	}		
 	#	update CALL_ID s
 	setnames(cnsc.1s, 'CALL_ID', 'CALL_ID_OLD')
 	cnsc.1s		<- merge(cnsc.1s, cnsc.1s[, list(CALL_ID_OLD=CALL_ID_OLD, CALL_ID=seq_along(CALL_POS), CALL_N=length(CALL_POS)), by='TAXON'], by=c('TAXON','CALL_ID_OLD'))
@@ -366,9 +389,40 @@ haircut.get.call.for.PNG_ID<- function(indir.st, indir.al, png_id, files, alfile
 	tmp2		<- rownames(cr)[ !grepl(png_id,rownames(cr)) | rownames(cr)%in%tmp ] 
 	cr			<- cr[tmp2,]
 	for(tx in tmp)
-		cr[tx, subset(cnsc.df, TAXON==tx & CALL==0 & SITE<=ncol(cr))[, SITE]]	<- '-'	
-	cr			<- as.DNAbin(cr)			
+		cr[tx, subset(cnsc.df, TAXON==tx & CALL==0 & SITE<=ncol(cr))[, SITE]]	<- '-'
+	#	rm all gaps from alignment
+	cr			<- seq.rmgaps(cr)				
 	list(cr=cr, cnsc.df=cnsc.df, conf=conf)
+}
+##--------------------------------------------------------------------------------------------------------
+##	remove gaps 
+##--------------------------------------------------------------------------------------------------------
+seq.rmgaps<- function(seq.DNAbin.matrix, rm.only.col.gaps=1, rm.char='-', verbose=0)
+{
+	if(class(seq.DNAbin.matrix)=='DNAbin')
+		seq.DNAbin.matrix		<- as.character(seq.DNAbin.matrix)		
+	if(!rm.only.col.gaps)
+	{	
+		if(is.matrix(seq.DNAbin.matrix))
+		{
+			tmp					<- lapply(seq_len(nrow(seq.DNAbin.matrix)), function(i){	seq.DNAbin.matrix[i, !seq.DNAbin.matrix[i,]%in%rm.char]	})
+			names(tmp)			<- rownames(seq.DNAbin.matrix)
+		}
+		else
+		{
+			tmp					<- lapply(seq_along(seq.DNAbin.matrix), function(i){	seq.DNAbin.matrix[[i]][ !seq.DNAbin.matrix[[i]]%in%rm.char]	})
+			names(tmp)			<- names(seq.DNAbin.matrix)
+		}		
+		seq.DNAbin.matrix	<- tmp
+	}
+	else
+	{		
+		gap					<- apply(seq.DNAbin.matrix,2,function(x) all(x%in%rm.char)) 
+		if(verbose)		cat(paste("\nremove gaps, n=",length(which(gap))))
+		if(verbose>1)	cat(paste("\nremove gaps, at pos=",which(gap)))
+		seq.DNAbin.matrix	<- seq.DNAbin.matrix[,!gap]	
+	}
+	as.DNAbin( seq.DNAbin.matrix )
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	process all files in indir with 'haircut.get.cut.statistics'
@@ -402,7 +456,7 @@ haircutwrap.get.cut.statistics<- function(indir, par, outdir=indir, batch.n=NA, 
 	cat(paste('\nFound processed files, n=', infiles[, length(which(DONE))]))
 	infiles		<- subset(infiles, !DONE)
 	#
-	#	infiles[, which(grepl('13554_1_14',FILE))]	fls<- 140
+	#	infiles[, which(grepl('15173_1_56',FILE))]	fls<- 1224
 	#	process files
 	for(fls in infiles[, seq_along(FILE)])
 	{
