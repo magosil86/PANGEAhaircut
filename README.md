@@ -147,10 +147,15 @@ E logit(mu) = b0 + spAGR * b1 + sGAP * b2.
 The probability *mu* differs for each site and depends on the site specific values *spAGR* and *sGAP*. The parameters b0, b1, b2 are fitted through Beta Binomial regression on ~3,000 contigs that Chris Wymant curated manually in April 2015. The parameters are learned independently for each consecutive 10 base pair chunk. Thus, the calling probability is quite local. Potential caveat: if the cut/ref/raw alignment contains large insertions, then the site in the alignment do not correspond to the sites of the model parameters b0, b1, b2. The script removes all insertions that are only present amongst the cut/raw contigs and are longer 100 sites. All such cases corresponded to reverse raw contigs. The value 100 is chosen because the longest insertion in the reference HIV compendium is about 100 bp. Once these insertions are removed, the coordinates of the descriptive statistics correspond to the coordinates of the model parameters.
 
 The above two statistics separate called and not called (i. e. haircut) sites amongst the April 2015 curated contigs quite well:
-* each panel corresponds to a 10 bp chunk
+* each panel corresponds to a 10 bp chunk, with starting position indicated
+* blue: called site amongst curated contigs
+* red: not called site amongst curated contigs
+* y-axis: is *spAGR* (not what it says in the label)
+* there is considerable variation in the calling region as we move along the genome. This is why the model parameters b0, b1, b2 are separately calculated for 10 bp chunks.
 
 ![alt tag](https://github.com/olli0601/PANGEAhaircut/blob/master/man/man_stats1.png)
 ![alt tag](https://github.com/olli0601/PANGEAhaircut/blob/master/man/man_stats2.png)
+
 
 ## Calling sites i. e. no haircut
 A particular site of a cut/raw contig is called (that is not deleted), if the calling probability at that site if
@@ -168,6 +173,13 @@ Here is an example to illustrate:
 * the dips in the blue line correspond to sites with high sequence variability
 
 ![alt tag](https://github.com/olli0601/PANGEAhaircut/blob/master/man/callprob_ex.png)
+
+The sensitivity (SENS), specificity (SPEC), false discovery rate (FDR) and false omission rates (FOR) associated with the April 2015 curated contigs is quite good:
+* for positions 1,400 - 1,599.
+* we evaluated plots as the one shown here below, and decided to set the cut off in the above decision rule to 10 standard deviations.
+
+![alt tag](https://github.com/olli0601/PANGEAhaircut/blob/master/man/man_stats3.png)
+
 
 ## Curating called sites into long chunks
 Across each cut/raw contig, neighbouring sites may be called or not called, if *mu* is close to the threshold. We define
