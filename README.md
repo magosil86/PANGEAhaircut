@@ -126,11 +126,14 @@ rm -d $CWD/algnd_15-08-26-11-52-27 $CWD/call_15-08-26-11-52-27 $CWD/cutstat_15-0
 # How it works:
 The haircutting procedures is divided into several separate steps:
 
-* The procedure starts by aligning cut and raw IVA contigs against a set of reference HIV sequences. The raw contigs are produced by IVA. The cut contigs are spliced or reverse versions of the raw contigs. MAFFT --add is used obtain different alignments: (1) raw+ref, (2) cut+ref, (3) raw+cut+ref, (4) raw+cut+ref with length kept at the length of the cut+ref alignment. The raw+cut+ref alignment is produced by adding the raw contigs to alignment (2). Alignment (4) is created with the additional options --keeplength --op 0.1.
+## Aligning cut/raw/ref contigs in multiple ways
+The procedure starts by aligning cut and raw IVA contigs against a set of reference HIV sequences. The raw contigs are produced by IVA. The cut contigs are spliced or reverse versions of the raw contigs. MAFFT --add is used obtain different alignments: (1) raw+ref, (2) cut+ref, (3) raw+cut+ref, (4) raw+cut+ref with length kept at the length of the cut+ref alignment. The raw+cut+ref alignment is produced by adding the raw contigs to alignment (2). Alignment (4) is created with the additional options --keeplength --op 0.1.
 
-* The next step is to decide which of the alignments (1-4) are used in subsequent steps. This procedure aims to handle very large insertions into the reference alignment. These arise occasionally when raw IVA contigs correspond to the reverse of an actual part of the HIV genome. The current rule is: if alignment (3) has length <12000 bp, then use (3). Otherwise, use alignment (2). Potential caveat: this may ignore valid raw contigs if they accompany a reverse raw contig, and if the valid raw contig is not amongst the cut contigs.  
+## Keeping one of the cut/raw/ref contig alignments for further analysis
+The next step is to decide which of the alignments (1-4) are used in subsequent steps. This procedure aims to handle very large insertions into the reference alignment. These arise occasionally when raw IVA contigs correspond to the reverse of an actual part of the HIV genome. The current rule is: if alignment (3) has length <12000 bp, then use (3). Otherwise, use alignment (2). Potential caveat: this may ignore valid raw contigs if they accompany a reverse raw contig, and if the valid raw contig is not amongst the cut contigs.  
 
-* The next step calculates statistics that are used to decide if a 10 base pair chunk of a contig is to be kept (i. e. no haircut). The script determines the site frequency composition and coverage amongst the reference sequences. Next, the consensus sequence amongst the references is determined. For each cut/raw contig and the consensus, 
-- the probability that the sequence agrees with the references is calculated for each site (pAGR),
-- and the presence of a gap at a site is evaluated (GAP).
+## Calculate descriptive statistics for each site of cut/raw contigs and the consensus in the same alignment
+The next step calculates statistics that are used to decide if a 10 base pair chunk of a contig is to be kept (i. e. no haircut). The script determines the site frequency composition and coverage amongst the reference sequences. Next, the consensus sequence amongst the references is determined. For each cut/raw contig and the consensus, 
+*  the probability that the sequence agrees with the references is calculated for each site (pAGR),
+*  and the presence of a gap at a site is evaluated (GAP).
 Next, pAGR and GAP are smoothed by evaluating the mean over a sliding window of length 200. This gives two statistics spAGR and sGAP for each site of cut/raw contigs and the consensus.
