@@ -134,6 +134,14 @@ The next step is to decide which of the alignments (1-4) are used in subsequent 
 
 ## Calculate descriptive statistics for each site of cut/raw contigs and the consensus in the same alignment
 The next step calculates statistics that are used to decide if a 10 base pair chunk of a contig is to be kept (i. e. no haircut). The script determines the site frequency composition and coverage amongst the reference sequences. Next, the consensus sequence amongst the references is determined. For each cut/raw contig and the consensus, 
-*  the probability that the sequence agrees with the references is calculated for each site (pAGR),
-*  and the presence of a gap at a site is evaluated (GAP).
-Next, pAGR and GAP are smoothed by evaluating the mean over a sliding window of length 200. This gives two statistics spAGR and sGAP for each site of cut/raw contigs and the consensus.
+*  the probability that the sequence agrees with the references is calculated for each site (*pAGR*),
+*  and the presence of a gap at a site is evaluated (*GAP*).
+
+Next, *pAGR* and *GAP* are smoothed by evaluating the mean over a sliding window of length 200. This gives two statistics *spAGR* and *sGAP* for each site of cut/raw contigs and the consensus in the same alignment file.
+
+## Describe the probability of calling a site of the cut/raw contigs and the consensus in the same alignment
+Denote this probability by *mu*. The model is 
+
+E logit(mu) = b0 + spAGR * b1 + sGAP * b2.
+
+The probability *mu* differs for each site and depends on the site specific values *spAGR* and *sGAP*. The parameters b0, b1, b2 are fitted through Beta Binomial regression on ~3,000 contigs that Chris Wymant curated manually in April 2015. The parameters are learned independently for each consecutive 10 base pair chunk. Thus, the calling probability is quite local.
