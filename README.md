@@ -146,6 +146,12 @@ E logit(mu) = b0 + spAGR * b1 + sGAP * b2.
 
 The probability *mu* differs for each site and depends on the site specific values *spAGR* and *sGAP*. The parameters b0, b1, b2 are fitted through Beta Binomial regression on ~3,000 contigs that Chris Wymant curated manually in April 2015. The parameters are learned independently for each consecutive 10 base pair chunk. Thus, the calling probability is quite local. Potential caveat: if the cut/ref/raw alignment contains large insertions, then the site in the alignment do not correspond to the sites of the model parameters b0, b1, b2. The script removes all insertions that are only present amongst the cut/raw contigs and are longer 100 sites. All such cases corresponded to reverse raw contigs. The value 100 is chosen because the longest insertion in the reference HIV compendium is about 100 bp. Once these insertions are removed, the coordinates of the descriptive statistics correspond to the coordinates of the model parameters.
 
+The above two statistics separate called and not called (i. e. haircut) sites amongst the April 2015 curated contigs quite well:
+* each panel corresponds to a 10 bp chunk
+
+![alt tag](https://github.com/olli0601/PANGEAhaircut/blob/master/man/man_stats1.png)
+![alt tag](https://github.com/olli0601/PANGEAhaircut/blob/master/man/man_stats2.png)
+
 ## Calling sites i. e. no haircut
 A particular site of a cut/raw contig is called (that is not deleted), if the calling probability at that site if
 * it is larger than 0.80, or
@@ -154,6 +160,12 @@ A particular site of a cut/raw contig is called (that is not deleted), if the ca
 mu >= min(0.8, muc - 10 * std dev (muc))
 
 This rule accounts for heterogeneity across the HIV genome. In env and especially the V loops, we expect substantial site variation. At these sites, the calling probability of the consensus sequences is much lower than in more conserved gene regions. Therefore, the above approach calls sites much less stringently at known sites of the genome that are associated with substantial variation. 
+
+Here is an example to illustrate:
+* each panel corresponds to a cut/raw contig
+* blue line: is the threshold, min(0.8, muc - 10 * std dev (muc))
+* black line: is the calling probability of the cut/raw contig
+* the dips in the blue line correspond to sites with high sequence variability
 
 ![alt tag](https://github.com/olli0601/PANGEAhaircut/blob/master/man/callprob_ex.png)
 
