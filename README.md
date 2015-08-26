@@ -46,9 +46,10 @@ library(help=PANGEAhaircut)
 
 ```
 #DATA		<- SET THIS DIRECTORY
-indir			<- paste(DATA, 'contigs_150408_wref', sep='/' )
-outdir		<- paste(DATA, 'contigs_150408_wref_cutstat', sep='/' )		
-cat(cmd.haircut.pipeline(indir, outdir, batch.n=200, batch.id=2))
+indir.cut		<- paste(DATA, 'contigs_150408_unaligned_cut', sep='/' )
+indir.raw		<- paste(DATA, 'contigs_150408_unaligned_raw', sep='/' )
+outdir		<- paste(DATA, 'contigs_150408_model150816a', sep='/' )		
+cat(cmd.haircut.pipeline(indir.cut, indir.raw, outdir, batch.n=200, batch.id=1))
 ```
 
 produces:
@@ -63,15 +64,39 @@ produces:
 
 CWD=$(pwd)
 echo $CWD
-mkdir -p $CWD/cutstat_15-08-18-13-03-29
-mkdir -p $CWD/call_15-08-18-13-03-29
+mkdir -p $CWD/algnd_15-08-26-11-52-27
+mkdir -p $CWD/cutstat_15-08-26-11-52-27
+mkdir -p $CWD/call_15-08-26-11-52-27
+
+#######################################################
+# start: run cmdwrap.align.contigs.with.ref
+#######################################################
+mafft --anysymbol --add /Users/Oliver/Dropbox\ \(Infectious\ Disease\)/OR_Work/2015/2015_PANGEA_haircut/contigs_150408_unaligned_cut/12559_1_1_hiv_cut.fasta --auto $CWD/algnd_15-08-26-11-52-27 > /Users/Oliver/Dropbox\ \(Infectious\ Disease\)/OR_Work/2015/2015_PANGEA_haircut/contigs_150408_unaligned_raw/12559_1_1_cut_wRefs.fasta
+...
+...
+...
+mafft --anysymbol --add /Users/Oliver/Dropbox\ \(Infectious\ Disease\)/OR_Work/2015/2015_PANGEA_haircut/contigs_150408_unaligned_cut/13557_1_84_hiv_cut.fasta --auto $CWD/algnd_15-08-26-11-52-27 > /Users/Oliver/Dropbox\ \(Infectious\ Disease\)/OR_Work/2015/2015_PANGEA_haircut/contigs_150408_unaligned_raw/13557_1_84_cut_wRefs.fasta
+#######################################################
+# end: run cmdwrap.align.contigs.with.ref
+#######################################################
+
+ 
+#######################################################
+# start: run haircut.check.alignment.Rscript
+####################################################### 
+echo 'run Rscript /Users/Oliver/Library/R/3.1/library/PANGEAhaircut/haircut.check.alignment.Rscript'
+ Rscript /Users/Oliver/Library/R/3.1/library/PANGEAhaircut/haircut.check.alignment.Rscript -indir=$CWD/algnd_15-08-26-11-52-27 -outdir=$CWD/algnd_15-08-26-11-52-27 
+echo 'end Rscript /Users/Oliver/Library/R/3.1/library/PANGEAhaircut/haircut.check.alignment.Rscript'
+#######################################################
+# end: run haircut.check.alignment.Rscript
+#######################################################
 
  
 #######################################################
 # start: run haircut.cutstat.contigs.Rscript
 ####################################################### 
 echo 'run Rscript /Users/Oliver/Library/R/3.1/library/PANGEAhaircut/haircut.cutstat.contigs.Rscript'
- Rscript /Users/Oliver/Library/R/3.1/library/PANGEAhaircut/haircut.cutstat.contigs.Rscript -indir=/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_150408_wref -outdir=$CWD/cutstat_15-08-18-13-03-29 -batch.n=200 -batch.id=2 
+ Rscript /Users/Oliver/Library/R/3.1/library/PANGEAhaircut/haircut.cutstat.contigs.Rscript -indir=$CWD/algnd_15-08-26-11-52-27 -outdir=$CWD/cutstat_15-08-26-11-52-27 
 echo 'end Rscript /Users/Oliver/Library/R/3.1/library/PANGEAhaircut/haircut.cutstat.contigs.Rscript'
 #######################################################
 # end: run haircut.cutstat.contigs.Rscript
@@ -82,14 +107,14 @@ echo 'end Rscript /Users/Oliver/Library/R/3.1/library/PANGEAhaircut/haircut.cuts
 # start: run haircut.call.contigs.Rscript
 ####################################################### 
 echo 'run Rscript /Users/Oliver/Library/R/3.1/library/PANGEAhaircut/haircut.call.contigs.Rscript'
- Rscript /Users/Oliver/Library/R/3.1/library/PANGEAhaircut/haircut.call.contigs.Rscript -indir.st=$CWD/cutstat_15-08-18-13-03-29 -indir.al=/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_150408_wref -outdir=$CWD/call_15-08-18-13-03-29 
+ Rscript /Users/Oliver/Library/R/3.1/library/PANGEAhaircut/haircut.call.contigs.Rscript -indir.st=$CWD/cutstat_15-08-26-11-52-27 -indir.al=/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_150408_wref -outdir=$CWD/call_15-08-26-11-52-27 
 echo 'end Rscript /Users/Oliver/Library/R/3.1/library/PANGEAhaircut/haircut.call.contigs.Rscript'
 #######################################################
 # end: run haircut.call.contigs.Rscript
 #######################################################
 
-mv $CWD/call_15-08-18-13-03-29/* /Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_150408_wref_cutstat
-rm -d $CWD/call_15-08-18-13-03-29 $CWD/cutstat_15-08-18-13-03-29
+mv $CWD/call_15-08-26-11-52-27/* /Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_150408_model150816a
+rm -d $CWD/algnd_15-08-26-11-52-27 $CWD/call_15-08-26-11-52-27 $CWD/cutstat_15-08-26-11-52-27
 
 #######################################################
 #
