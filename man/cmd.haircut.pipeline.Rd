@@ -17,6 +17,17 @@ If cut/raw contigs correspond to each other, only one of both is returned.
 }
 \examples{
 #
+#	run from command line 
+#	this produces a command line string that can be run in UNIX alikes
+#
+\dontrun{
+	
+indir.cut	<- paste(DATA, 'contigs_150408_unaligned_cut', sep='/' )
+indir.raw	<- paste(DATA, 'contigs_150408_unaligned_raw', sep='/' )
+outdir		<- paste(DATA, 'contigs_150408_model150816a', sep='/' )		
+cat(cmd.haircut.pipeline(indir.cut, indir.raw, outdir, batch.n=200, batch.id=1))
+}
+#
 #	create multiple runs on HPC using the command line version
 #
 \dontrun{
@@ -26,7 +37,7 @@ indir.cut	<- paste(DATA, 'contigs_150408_unaligned_cut', sep='/' )
 indir.raw	<- paste(DATA, 'contigs_150408_unaligned_raw', sep='/' )
 outdir		<- paste(DATA, 'contigs_150408_model150816a', sep='/' )		
 batch.n		<- 200
-tmp			<- data.table(FILE=list.files(indir, pattern='fasta$', recursive=T))
+tmp			<- data.table(FILE=list.files(indir.raw, pattern='fasta$', recursive=T))
 tmp[, BATCH:= ceiling(seq_len(nrow(tmp))/batch.n)]
 tmp			<- tmp[, max(BATCH)]
 for(batch.id in seq.int(1,tmp))
