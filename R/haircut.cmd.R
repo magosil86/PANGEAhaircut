@@ -244,7 +244,7 @@ cmd.haircut.pipeline<- function(indir.cut, indir.raw, outdir, batch.n=NA, batch.
 	#copy to destination
 	if(!is.na(batch.n) & !is.na(batch.id))
 	{
-		cmd		<- paste(cmd, '\nmv', paste(outdir.lcl,'model150816a_QUANTILESofPRCALLbyCONTIG.csv',sep='/'), paste(outdir.lcl,'model150816a_QUANTILESofPRCALLbyCONTIG_batchn',batch.n,'_batchid',batch.id,'.csv',sep='/'),sep='')	
+		cmd		<- paste(cmd, '\nmv ', paste(outdir.lcl,'model150816a_QUANTILESofPRCALLbyCONTIG.csv',sep='/'),' ', paste(outdir.lcl,'model150816a_QUANTILESofPRCALLbyCONTIG_batchn',batch.n,'_batchid',batch.id,'.csv',sep='/'),sep='')	
 	}	
 	cmd			<- paste(cmd, "\nmv ",outdir.lcl,"/* ",outdir,"\n",sep='')
 	cmd			<- paste(cmd, "rm -r ",aldir," ",outdir.lcl," ",cutdir,"\n",sep='')
