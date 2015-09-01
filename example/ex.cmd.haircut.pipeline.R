@@ -3,7 +3,7 @@
 #	this produces a command line string that can be run in UNIX alikes
 #
 \dontrun{
-	
+	 
 indir.cut	<- paste(DATA, 'contigs_150408_unaligned_cut', sep='/' )
 indir.raw	<- paste(DATA, 'contigs_150408_unaligned_raw', sep='/' )
 outdir		<- paste(DATA, 'contigs_150408_model150816a', sep='/' )		
