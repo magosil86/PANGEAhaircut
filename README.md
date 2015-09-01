@@ -153,8 +153,8 @@ The above two statistics separate called and not called (i. e. haircut) sites am
 * y-axis: is *spAGR* (not what it says in the label)
 * there is considerable variation in the calling region as we move along the genome. This is why the model parameters b0, b1, b2 are separately calculated for 10 bp chunks.
 
-![alt tag](https://github.com/olli0601/PANGEAhaircut/blob/master/man/man_stats1.png)
-![alt tag](https://github.com/olli0601/PANGEAhaircut/blob/master/man/man_stats2.png)
+![alt tag](https://github.com/olli0601/PANGEAhaircut/blob/master/inst/man_stats1.png)
+![alt tag](https://github.com/olli0601/PANGEAhaircut/blob/master/inst/man_stats2.png)
 
 
 ## Calling sites i. e. no haircut
@@ -172,13 +172,13 @@ Here is an example to illustrate:
 * black line: is the calling probability of the cut/raw contig
 * the dips in the blue line correspond to sites with high sequence variability
 
-![alt tag](https://github.com/olli0601/PANGEAhaircut/blob/master/man/callprob_ex.png)
+![alt tag](https://github.com/olli0601/PANGEAhaircut/blob/master/inst/callprob_ex.png)
 
 The sensitivity (SENS), specificity (SPEC), false discovery rate (FDR) and false omission rates (FOR) associated with the April 2015 curated contigs is quite good:
 * for positions 1,400 - 1,599.
 * we evaluated plots as the one shown here below, and decided to set the cut off in the above decision rule to 10 standard deviations.
 
-![alt tag](https://github.com/olli0601/PANGEAhaircut/blob/master/man/man_stats3.png)
+![alt tag](https://github.com/olli0601/PANGEAhaircut/blob/master/inst/man_stats3.png)
 
 
 ## Curating called sites into long chunks
