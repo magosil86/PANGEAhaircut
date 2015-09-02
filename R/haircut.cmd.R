@@ -186,7 +186,7 @@ cmd.haircut.call<- function(indir.st, indir.al, outdir, mfile=NA, trainfile=NA, 
 # start: run haircut.call.contigs.Rscript
 #######################################################"
 	cmd		<- paste(cmd, paste("\necho \'run ",prog,"\'\n",sep=''))
-	cmd		<- paste(cmd, paste(prog,' -indir.st=',indir.st,' -indir.al=',indir.al,' -outdir=',outdir, sep=''))
+	cmd		<- paste(cmd, paste(prog,' -indir.st=',gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',indir.st,fixed=T),fixed=T),fixed=T),' -indir.al=',gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',indir.al,fixed=T),fixed=T),fixed=T),' -outdir=',gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',outdir,fixed=T),fixed=T),fixed=T), sep=''))
 	if(!is.na(mfile))
 		cmd	<- paste(cmd, ' -mfile=',mfile, sep='')	
 	if(!is.na(trainfile))
@@ -286,7 +286,7 @@ cmd.haircut.cutstat<- function(indir, outdir, batch.n=NA, batch.id=NA, prog=PR.H
 # start: run haircut.cutstat.contigs.Rscript
 #######################################################"
 	cmd		<- paste(cmd, paste("\necho \'run ",prog,"\'\n",sep=''))
-	cmd		<- paste(cmd, paste(prog,' -indir=',indir,' -outdir=',outdir, sep=''))
+	cmd		<- paste(cmd, paste(prog,' -indir=',gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',indir,fixed=T),fixed=T),fixed=T),' -outdir=',gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',outdir,fixed=T),fixed=T),fixed=T), sep=''))
 	if(!is.na(batch.n) & !is.na(batch.id))
 		cmd	<- paste(cmd, ' -batch.n=',batch.n, ' -batch.id=',batch.id, sep='')
 	cmd		<- paste('\n',cmd,paste("\necho \'end ",prog,"\'\n",sep=''))

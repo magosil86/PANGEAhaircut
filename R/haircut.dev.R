@@ -6,6 +6,7 @@ dev.haircut<- function()
 	if(0)	#check size of alignment
 	{
 		indir		<- paste(DATA, 'contigs_150408_wref', sep='/' )
+		indir		<- paste(DATA, 'contigs_150902_wref', sep='/' )
 		infiles		<- data.table(FILE=list.files(indir, pattern='fasta$', recursive=T))
 		infiles[, PNG_ID:= gsub('\\.fasta','',gsub('_frclen|_refc|_refr|_wRefs','',FILE))]
 		infiles[, AL_TYPE:= gsub('_*','',gsub('\\.fasta','',gsub('[0-9]*','',FILE)))]				
@@ -498,6 +499,9 @@ pipeline.various<- function()
 		indir.cut	<- paste(DATA, 'contigs_150408_unaligned_cut', sep='/' )
 		indir.raw	<- paste(DATA, 'contigs_150408_unaligned_raw', sep='/' )
 		outdir		<- paste(DATA, 'contigs_150408_wref', sep='/' )
+		indir.cut	<- paste(DATA, 'contigs_150902_unaligned_cut', sep='/' )
+		indir.raw	<- paste(DATA, 'contigs_150902_unaligned_raw', sep='/' )
+		outdir		<- paste(DATA, 'contigs_150902_wref', sep='/' )		
 		batch.n		<- 200
 		tmp			<- data.table(FILE=list.files(indir.raw, pattern='fasta$', recursive=T))
 		tmp[, BATCH:= ceiling(seq_len(nrow(tmp))/batch.n)]
@@ -514,7 +518,10 @@ pipeline.various<- function()
 	if(0)
 	{
 		indir		<- paste(DATA, 'contigs_150408_wref', sep='/' )
-		outdir		<- paste(DATA, 'contigs_150408_wref_cutstat', sep='/' )		
+		outdir		<- paste(DATA, 'contigs_150408_wref_cutstat', sep='/' )
+		indir		<- paste(DATA, 'contigs_150902_wref', sep='/' )
+		outdir		<- paste(DATA, 'contigs_150902_wref_cutstat', sep='/' )		
+		
 		batch.n		<- 200
 		tmp			<- data.table(FILE=list.files(indir, pattern='wRefs\\.fasta$', recursive=T))
 		tmp[, BATCH:= ceiling(seq_len(nrow(tmp))/batch.n)]
@@ -533,6 +540,10 @@ pipeline.various<- function()
 		indir.al	<- paste(DATA,'contigs_150408_wref',sep='/')
 		outdir		<- paste(DATA,'contigs_150408_model150816a',sep='/')
 		trainfile	<- paste(DATA,'contigs_150408_trainingset_subsets.R',sep='/')
+		indir.st	<- paste(DATA,'contigs_150902_wref_cutstat',sep='/')
+		indir.al	<- paste(DATA,'contigs_150902_wref',sep='/')
+		outdir		<- paste(DATA,'contigs_150902_model150816b',sep='/')
+		trainfile	<- NA
 		batch.n		<- 200
 		
 		tmp			<- data.table(INFILE=list.files(indir.al, pattern='wRefs\\.fasta$', recursive=T))
