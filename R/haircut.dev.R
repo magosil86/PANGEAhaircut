@@ -707,7 +707,7 @@ pipeline.various<- function()
 			cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=1, hpc.mem="5000mb")
 			cat(cmd)		
 			outfile		<- paste("hrct",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.')
-			cmd.hpccaller(paste(DATA,"tmp",sep='/'), outfile, cmd)	
+			cmd.hpccaller(DATA, outfile, cmd)	
 		}
 	}
 	if(0)
