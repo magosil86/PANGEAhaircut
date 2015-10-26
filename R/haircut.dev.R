@@ -704,7 +704,7 @@ pipeline.various<- function()
 		for(batch.id in seq.int(1,tmp))
 		{	
 			cmd			<- cmdwrap.align.contigs.with.ref(indir.cut, indir.raw, outdir, batch.n=batch.n, batch.id=batch.id)
-			cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=1, hpc.mem="5000mb")
+			cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeph', hpc.walltime=1, hpc.mem="1000mb")
 			cat(cmd)		
 			outfile		<- paste("hrct",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.')
 			cmd.hpccaller(DATA, outfile, cmd)	
