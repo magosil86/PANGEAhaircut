@@ -649,7 +649,7 @@ dev.haircut<- function()
 ##--------------------------------------------------------------------------------------------------------
 pipeline.various<- function()
 {
-	if(1)
+	if(0)
 	{		
 		indir.cut	<- paste(DATA, 'contigs_150902_unaligned_cut', sep='/' )
 		indir.raw	<- paste(DATA, 'contigs_150902_unaligned_raw', sep='/' )
@@ -685,7 +685,7 @@ pipeline.various<- function()
 			cmd.hpccaller(paste(DATA,"tmp",sep='/'), outfile, cmd)	
 		}
 	}
-	if(0)
+	if(1)
 	{		
 		indir.cut	<- paste(DATA, 'contigs_150408_unaligned_cut', sep='/' )
 		indir.raw	<- paste(DATA, 'contigs_150408_unaligned_raw', sep='/' )
@@ -693,7 +693,11 @@ pipeline.various<- function()
 		indir.cut	<- paste(DATA, 'contigs_150902_unaligned_cut', sep='/' )
 		indir.raw	<- paste(DATA, 'contigs_150902_unaligned_raw', sep='/' )
 		outdir		<- paste(DATA, 'contigs_150902_wref', sep='/' )		
-		batch.n		<- 200
+		indir.cut	<- paste(DATA, 'contigs_151026_unaligned_cut', sep='/' )
+		indir.raw	<- paste(DATA, 'contigs_151026_unaligned_raw', sep='/' )
+		outdir		<- paste(DATA, 'contigs_151026_wref', sep='/' )		
+		
+		batch.n		<- 100
 		tmp			<- data.table(FILE=list.files(indir.raw, pattern='fasta$', recursive=T))
 		tmp[, BATCH:= ceiling(seq_len(nrow(tmp))/batch.n)]
 		tmp			<- tmp[, max(BATCH)]
