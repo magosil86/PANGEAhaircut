@@ -56,7 +56,7 @@ cmd.various<- function(prog= PR.VARIOUS)
 cmdwrap.align.contigs.with.ref<- function(indir.cut, indir.raw, outdir, reffile=NA, batch.n=NA, batch.id=NA)
 {
 	if(is.na(reffile))
-		reffile	<- system.file(package="PANGEAhaircut", "HIV1_COM_2012_genome_DNA_WithExtraA1UG.fasta")
+		reffile	<- system.file(package="PANGEAhaircut", "HIV1_COM_2012_genome_DNA_NoLTR.fasta")
 	infiles		<- data.table(INFILECUT=list.files(indir.cut, pattern='fasta$', recursive=T))
 	infiles[, PNG_ID:= gsub('_hiv','',gsub('\\.fasta','',gsub('_cut|_raw','',INFILECUT)))]
 	tmp			<- data.table(INFILECUT=list.files(indir.raw, pattern='fasta$', recursive=T))

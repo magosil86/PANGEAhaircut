@@ -1,4 +1,195 @@
+dev.AC.data<- function()
+{
+	require(data.table)
+	indir		<- "/work/or105/PANGEA_AC/150921/"
+	infiles		<- data.table(FASTQ=list.files(indir, pattern='fastq\\.gz$|fastq$', recursive=1))
+	infiles[, RUN:= sapply(strsplit(FASTQ,'/',fixed=1),'[[',1)]
+	infiles[, ID:= gsub('_S[0-9]+_.*','',basename(FASTQ))]
+	infiles[, IDS:= gsub('_S|_','',regmatches(basename(FASTQ),regexpr('_S[0-9]+_',basename(FASTQ))))]
+	infiles[, IDL:= gsub('_L|_','',regmatches(basename(FASTQ),regexpr('_L[0-9]+_',basename(FASTQ))))]
+	infiles[, IDR:= gsub('_R|_','',regmatches(basename(FASTQ),regexpr('_R[0-9]+_',basename(FASTQ))))]
+	
+	ctfiles		<- data.table(IVA=list.files(indir, recursive=1))
+	ctfiles		<- subset(ctfiles, grepl('contigs_hit_ref',IVA)) 
+	ctfiles[, RUN:= sapply(strsplit(IVA,'/',fixed=1),'[[',1)]
+	ctfiles[, ID:= gsub('.fasta','',gsub('.assembly_contigs_hit_ref','',sapply(strsplit(IVA,'/',fixed=1),'[[',2)))]	
+	infiles		<- merge(infiles, ctfiles, by=c('RUN','ID'), all=1)
+	
+	ctfiles		<- data.table(KRAKEN=list.files(indir, pattern='kraken.report$', recursive=1))	
+	ctfiles[, ID:= gsub('.kraken.report','',sapply(strsplit(KRAKEN,'/',fixed=1),'[[',2))]	
+	infiles		<- merge(infiles, ctfiles, by=c('ID'), all=1)
+	
+	write.csv( infiles, row.names=FALSE, file= paste(indir, '/infiles_151020.csv',sep='') )
+	save(infiles, file=paste(indir, '/infiles_151020.R',sep=''))
+	if(1)
+	{
+		#	move files with RESXxx, PRESxxx and TASPxxx to new directory
+		pngfiles	<- subset(infiles, !grepl('^UID|^Undetermined',ID))		
+		write.csv( pngfiles, row.names=FALSE, file= paste(indir, '/pngfiles_151020.csv',sep='') )
+		#	check pngfiles
+		stopifnot(nrow(subset(pngfiles, is.na(FASTQ)))==0)	
+		#	no IVA contigs --> 124
+		write.csv( subset(pngfiles, IDR==1 & is.na(IVA)), row.names=FALSE, file= paste(indir, '/infiles_151020_noIVA.csv',sep='') )
+		#	check: same S for each ID? -->  Run2_96_600V3_20140814 RES320
+		tmp	<- subset(pngfiles, !is.na(IVA))[, list(IDS_N=length(unique(IDS))), by=c('RUN','ID')]
+		subset(tmp, IDS_N>1)
+		#	check: more than two R files ?
+		tmp	<- subset(pngfiles, !is.na(IVA))[, list(IDR_N=length(IDR)), by=c('RUN','ID')]
+		subset(tmp, IDR_N>2)
+		#	total fastq 853
+		nrow(subset(pngfiles, !is.na(FASTQ) & IDR==1))	
+		#	total contigs 729
+		write.table( subset(pngfiles, !is.na(IVA) & IDR==1, select=IVA), quote=FALSE, col.names=FALSE, row.names=FALSE, file= paste(indir, '/infiles_151020_yesIVA.csv',sep='') )
+		nrow(subset(pngfiles, !is.na(IVA) & IDR==1))
+		#	number contigs per RUN
+		subset(pngfiles, !is.na(IVA) & IDR==1)[, table(RUN)]
+		#	number fastq per RUN
+		subset(pngfiles, !is.na(FASTQ) & IDR==1)[, table(RUN)]
+		#	no kraken report
+		write.csv( subset(pngfiles, IDR==1 & is.na(KRAKEN)), row.names=FALSE, file= paste(indir, '/infiles_151020_noKraken.csv',sep='') )
+	}
+	if(0)
+	{
+		#	no FASTQ 
+		stopifnot(nrow(subset(infiles, is.na(FASTQ)))==0)	
+		#	no IVA contigs
+		subset(infiles, IDR==1 & is.na(IVA))
+		#	check: same S for each ID?
+		tmp	<- subset(infiles, !is.na(IVA))[, list(IDS_N=length(unique(IDS))), by=c('RUN','ID')]
+		subset(tmp, IDS_N>1)
+		#	check: more than two R files ?
+		tmp	<- subset(infiles, !is.na(IVA))[, list(IDR_N=length(IDR)), by=c('RUN','ID')]
+		subset(tmp, IDR_N>2)
+		#	total fastq
+		nrow(subset(infiles, !is.na(FASTQ) & IDR==1))	
+		#	total contigs
+		nrow(subset(infiles, !is.na(IVA) & IDR==1))
+		#	number contigs per RUN
+		subset(infiles, !is.na(IVA) & IDR==1)[, table(RUN)]
+		#	number fastq per RUN
+		subset(infiles, !is.na(FASTQ) & IDR==1)[, table(RUN)]
+	}
+	
+}
 
+dev.align.haircutcontigs<- function()
+{
+	if(0)
+	{
+		#	extract the haircut contigs and prepare alignment files
+		indir1		<- '/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_150902_model150816b'
+		indir2		<- '/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_150902_model150816b_manual'
+		outdir		<- '/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_150903_model150816b'
+		infiles 	<- rbind( 	data.table(FILE=list.files(indir2, pattern='\\.fasta$', recursive=T, full.name=T)),
+								data.table(FILE=list.files(indir1, pattern='\\.fasta$', recursive=T, full.name=T))	)		
+		infiles[, PNG_ID:= gsub('_nohair','',gsub('_wref','',gsub('\\.fasta','',basename(FILE))))]
+		infiles[, MNL:= factor(grepl('manual',FILE), levels=c(TRUE,FALSE), labels=c('Y','N'))]
+		infiles		<- dcast.data.table(infiles, PNG_ID~MNL, value.var='FILE')
+		tmp			<- infiles[, which(is.na(Y))]
+		set(infiles, tmp, 'Y', infiles[tmp, N])
+		infiles		<- melt(infiles, id.vars='PNG_ID', measure.vars='Y', value.name='FILE')
+		#	extract just the curated contigs from file
+		cs			<- sapply(seq_len(nrow(infiles)), function(i)
+				{
+					cat('\nprocess',infiles[i,FILE])
+					#FILE	<- infiles[i,FILE]
+					#OFILE	<- infiles[1,OFILE]
+					#PNG_ID	<- infiles[1,PNG_ID] 
+					cr				<- read.dna(infiles[i,FILE], format='fasta')
+					cr				<- cr[grepl(infiles[i,PNG_ID],rownames(cr)),]	
+					as.list(cr)
+				})
+		#	reformat to list of sequences
+		cs			<- unlist(cs, recursive=F)
+		names(cs)	<- NULL
+		csi			<- data.table(TAXON= sapply(cs, rownames), LEN= sapply(cs, ncol))
+		csi[, PNG_ID:= sapply(strsplit(gsub('^\\.','',TAXON),'.',fixed=T),'[[',1)]
+		cs			<- do.call(c,lapply(cs, as.list))	
+		#	extract all contigs with min length into single alignment and save
+		tmp			<- merge(infiles, subset(csi, LEN==min(LEN), PNG_ID)[1,], by='PNG_ID')
+		cr			<- read.dna(tmp[1,FILE], format='fasta')
+		cr			<- as.list(cr[!grepl(tmp[1,PNG_ID],rownames(cr)),])
+		cr			<- c(cr, cs[ subset(csi, LEN==min(LEN))[, TAXON] ])	
+		write.dna(cr, file= paste(outdir, '/', 'contigs_minlen.fasta', sep=''), format='fasta', colsep='', nbcol=-1)
+		write.dna(cr, file= paste(outdir, '/', 'contigs_stub.fasta', sep=''), format='fasta', colsep='', nbcol=-1)
+		save(cr, csi, cs, file= paste(outdir, '/', 'contigs.R', sep=''))
+		#	extract all others 
+		tmp			<- subset(csi, LEN>min(LEN))
+		setkey(tmp, LEN)
+		tmp[, BATCH_ID:= ceiling(seq_len(nrow(tmp))/200) ]
+		invisible(sapply(tmp[, unique(BATCH_ID)], function(b)
+						{
+							write.dna(cs[ subset(tmp, BATCH_ID==b)[, TAXON] ], file= paste(outdir, '/', 'contigs_batch',b,'.fasta', sep=''), format='fasta', colsep='', nbcol=-1)
+						}))				
+	}
+	if(1)	#check if we missed any contigs
+	{
+		indir		<- '/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_150903_model150816b'
+		infile		<- 'contigs_0_20.fasta'
+		seq			<- read.dna(paste(indir,infile,sep='/'), format='fasta')
+		cpr			<- data.table(TAXON=rownames(seq))
+		cmissed		<- merge(data.table(TAXON=setdiff( csi[,TAXON], cpr[,TAXON] )), tmp, by='TAXON')
+		cmissed		<- cs[ cmissed[,TAXON] ]
+		
+		cr			<- read.dna( '/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_150902_model150816b/12559_1_1_wref_nohair.fasta', format='fasta')
+		cr			<- cr[1:200,] 
+		write.dna(c(cmissed, as.list(cr)), file= paste(indir, '/', 'contigs_missed.fasta', sep=''), format='fasta', colsep='', nbcol=-1)		
+	}
+	if(1)	#clean up alignment
+	{
+		indir		<- '/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_150903_model150816b'
+		infile		<- 'contigs_0_20b.fasta'
+		seq			<- read.dna(paste(indir,infile,sep='/'), format='fasta')
+		tmp			<- which( duplicated(rownames(seq)) )
+		rownames(seq)[tmp] 
+		seq			<- seq[ setdiff( seq_len(nrow(seq)), tmp ), ]
+		tmp			<- which(!grepl('^\\.[0-9]+_', rownames(seq)))		
+		seq			<- rbind(seq[tmp,], seq[ setdiff( seq_len(nrow(seq)), tmp ), ])
+		write.dna(seq, file= paste(indir, '/', 'contigs_cnsalign_PNGIDn3366_CNTGSn6120.fasta', sep=''), format='fasta', colsep='', nbcol=-1)
+		#	even more missed?
+		tmp			<- setdiff(csi[,TAXON],rownames(seq)[201:nrow(seq)])
+		cr			<- read.dna( '/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_150902_model150816b/12559_1_1_wref_nohair.fasta', format='fasta')
+		cr			<- cr[1:200,] 		
+		write.dna(c(cs[tmp], as.list(cr)), file= paste(indir, '/', 'contigs_missed2.fasta', sep=''), format='fasta', colsep='', nbcol=-1)
+		#	--> turns out these are just crap
+	
+		indir	 	<- '/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_150903_model150816b'
+		infiles		<- list.files(indir, pattern='*stripped*',full.names=TRUE)		
+		invisible(lapply(seq_along(infiles), function(i)
+						{
+							infile			<- infiles[i]
+							seq				<- read.dna(infile, format='fasta')
+							tmp				<- which( duplicated(rownames(seq)) )
+							rownames(seq)[tmp] 
+							seq				<- seq[ setdiff( seq_len(nrow(seq)), tmp ), ]
+							rownames(seq)	<- gsub(' (stripped)','',rownames(seq), fixed=TRUE)							
+							tmp				<- which(!grepl('^\\.[0-9]+_', rownames(seq)))		
+							seq				<- rbind(seq[tmp,], seq[ setdiff( seq_len(nrow(seq)), tmp ), ])
+							tmp				<- tail(strsplit(basename(infile),'_')[[1]],1)
+							write.dna(seq, file= paste(indir, '/', 'contigs_cnsalign_PNGIDn3366_CNTGSn6120_',tmp, sep=''), format='fasta', colsep='', nbcol=-1)							
+						}))
+	}
+	if(1)
+	{
+		indir		<- '/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_150903_model150816b'
+		load( paste(indir, '/', 'contigs.R', sep='') )
+		#	
+		#	add all others to alignment in batches of 200
+		batch.id	<- ".14683_1_18.2.2_cut"
+		write.dna( cs[ subset(tmp, TAXON==".14683_1_18.2.2_cut")[, TAXON] ], file= paste(outdir, '/', 'contigs_BATCH',batch.id,'.fasta', sep=''), format='fasta', colsep='', nbcol=-1)
+		cmd			<- cmd.align.contigs.with.ref(paste(outdir, '/', 'contigs_BATCH',batch.id,'.fasta', sep=''), paste(outdir, '/', 'contigs_minlen.fasta', sep=''), paste(outdir, '/', 'contigs_minlen_BATCH',batch.id,'.fasta', sep=''), options='')		
+		
+		batch.id	<- "14683_1_18"
+		write.dna( cs[ subset(tmp, PNG_ID=="14683_1_18")[, TAXON] ], file= paste(outdir, '/', 'contigs_BATCH',batch.id,'.fasta', sep=''), format='fasta', colsep='', nbcol=-1)
+		cmd			<- cmd.align.contigs.with.ref(paste(outdir, '/', 'contigs_BATCH',batch.id,'.fasta', sep=''), paste(outdir, '/', 'contigs_minlen.fasta', sep=''), paste(outdir, '/', 'contigs_minlen_BATCH',batch.id,'.fasta', sep=''), options='')	
+		
+		batch.id	<- 20
+		write.dna( cs[ subset(tmp, BATCH_ID==batch.id)[, TAXON] ], file= paste(outdir, '/', 'contigs_BATCH',batch.id,'.fasta', sep=''), format='fasta', colsep='', nbcol=-1)	
+		cmd			<- cmd.align.contigs.with.ref(paste(outdir, '/', 'contigs_BATCH',batch.id,'.fasta', sep=''), paste(outdir, '/', 'contigs_minlen.fasta', sep=''), paste(outdir, '/', 'contigs_minlen_BATCH.fasta', sep=''), options='')
+		
+	}
+		
+}
 
 
 dev.haircut<- function()	
