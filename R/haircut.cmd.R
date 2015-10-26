@@ -91,7 +91,7 @@ cmdwrap.align.contigs.with.ref<- function(indir.cut, indir.raw, outdir, reffile=
 				}
 				if(is.na(INFILECUT))
 				{
-					cmd			<- paste(cmd, cmd.align.contigs.with.ref(paste(indir.raw,'/',INFILERAW,sep=''), reffile, paste(outdir,'/',OUTFILE3,sep='')), sep='\n')					
+					cmd			<- cmd.align.contigs.with.ref(paste(indir.raw,'/',INFILERAW,sep=''), reffile, paste(outdir,'/',OUTFILE3,sep=''))					
 				}
 				list(CMD=cmd)
 			}, by='PNG_ID']
