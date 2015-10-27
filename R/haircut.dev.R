@@ -23,8 +23,19 @@ dev.AC.data<- function()
 	save(infiles, file=paste(indir, '/infiles_151020.R',sep=''))
 	if(1)
 	{
-		#	move files with RESXxx, PRESxxx and TASPxxx to new directory
+		#	only consider files with RESXxx, PRESxxx and TASPxxx
 		pngfiles	<- subset(infiles, !grepl('^UID|^Undetermined',ID))		
+		pngfiles[, FASTQ_NEW:= paste(RUN,'_',basename(FASTQ),sep='')]
+		tmp			<- pngfiles[, which(!is.na(IVA))]
+		pngfiles[, IVA_NEW:= NA_character_]		
+		set(pngfiles, tmp, 'IVA_NEW', pngfiles[tmp, paste(RUN,'_',gsub('\\.assembly_contigs_hit_ref','',basename(IVA)),sep='')])
+		#	move files
+		tmp			<- subset(pngfiles, !is.na(IVA) & IDR==1)
+		setkey(tmp, IVA)
+		tmp			<- unique(tmp)
+		tmp[, file.rename(paste(indir,'/',IVA,sep=''), paste(indir,'/IVA/',IVA_NEW,sep='')), by='IVA']		
+		pngfiles[, file.rename(paste(indir,'/',FASTQ,sep=''), paste(indir,'/FASTQ/',FASTQ_NEW,sep='')), by='FASTQ']
+		
 		write.csv( pngfiles, row.names=FALSE, file= paste(indir, '/pngfiles_151020.csv',sep='') )
 		#	check pngfiles
 		stopifnot(nrow(subset(pngfiles, is.na(FASTQ)))==0)	
@@ -194,6 +205,18 @@ dev.align.haircutcontigs<- function()
 
 dev.haircut<- function()	
 {
+	if(0)	#check which files not aligned 
+	{
+		dscp	<- as.data.table(read.csv("/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/pngfiles_151020.csv", stringsAsFactors=FALSE))
+		dscp[, ID:= paste(RUN,'_',ID,sep='')]
+		
+		dr		<- data.table(BLAST=list.files("~/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_151026_unaligned_raw"))
+		dr[, ID:= gsub('_hiv','',sapply(strsplit(BLAST,'.',fixed=1),'[[',1))]
+		dscp	<- merge(dscp, dr, by='ID', all.x=1)
+		subset(dscp, is.na(BLAST) & IDR==1 & !is.na(IVA))	
+		
+		subset(dscp, IDR==1)
+	}
 	if(0)	#check alignment: code
 	{
 		indir		<- paste(DATA, 'contigs_150408_wref', sep='/' )
@@ -711,7 +734,7 @@ pipeline.various<- function()
 			cmd.hpccaller(paste(DATA,"tmp",sep='/'), outfile, cmd)	
 		}
 	}
-	if(0)
+	if(1)
 	{		
 		indir.cut	<- paste(DATA, 'contigs_150408_unaligned_cut', sep='/' )
 		indir.raw	<- paste(DATA, 'contigs_150408_unaligned_raw', sep='/' )
@@ -736,7 +759,7 @@ pipeline.various<- function()
 			cmd.hpccaller(DATA, outfile, cmd)	
 		}
 	}
-	if(1)
+	if(0)
 	{
 		indir		<- paste(DATA, 'contigs_150408_wref', sep='/' )
 		outdir		<- paste(DATA, 'contigs_150408_wref_cutstat', sep='/' )

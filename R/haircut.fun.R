@@ -54,7 +54,7 @@ haircutwrap.get.call.for.PNG_ID<- function(indir.st,indir.al,outdir,ctrmc,predic
 					#PNG_ID<- png_id	<- '15034_1_75'
 					#PNG_ID<- png_id	<- '14944_1_17'
 					#PNG_ID<- png_id	<- '15173_1_56'
-					PNG_ID	<- png_id <- '100888.assembly_contigs_hit_ref'
+					PNG_ID	<- png_id <- 'TASP100561-A.assembly_contigs_hit_ref'
 					files	<- subset(infiles, PNG_ID==png_id)[, INFILE]
 					alfiles	<- subset(infiles, PNG_ID==png_id)[, ALFILE]								
 					tmp		<- haircut.get.call.for.PNG_ID(indir.st, indir.al, png_id, files, alfiles, par, ctrmc, predict.fun, crn)
@@ -139,7 +139,8 @@ haircut.get.call.for.PNG_ID<- function(indir.st, indir.al, png_id, files, alfile
 	#	check that coverage is >1 amongst references for long enough
 	if(!is.na(par['PRCALL.mxgpinref']) && nrow(cnsc.df) && nrow(cr))
 	{
-		rp		<- haircut.get.frequencies(cr[!grepl(png_id,rownames(cr)), ], bases=c('a','c','g','t','-'))
+		
+		rp		<- haircut.get.frequencies(cr[crn[, TAXON], ], bases=c('a','c','g','t','-'))
 		rp		<- subset(rp, BASE=='-', select=c(SITE, COV, FRQ))
 		rp[, COV_NOGP:= COV-FRQ*COV]
 		rp[, GPinREF:= as.integer(COV_NOGP<1)]	
@@ -173,10 +174,9 @@ haircut.get.call.for.PNG_ID<- function(indir.st, indir.al, png_id, files, alfile
 			}, by='TAXON']
 	png_key	<- Reduce(intersect, as.list(tmp[, PNG_KEY]))
 	cat('\nFound common substring between TAXON names and PNG_ID=', png_key)
-	tx[, CNTG:=tx[, gsub('^\\.','',gsub('_cut','',gsub(png_key,'',substring(TAXON, regexpr(png_key, TAXON)))))]]
-	tx[, OCNTG:= tx[, sapply(strsplit(CNTG,'.',fixed=T),'[[', par['CNF.contig.idx'])]]	
+	tx[, CNTG:=tx[, gsub('^\\.','',gsub('_cut','',gsub(png_key,'',substring(TAXON, regexpr(png_key, TAXON)))))]]		
 	tx[, OCNTG:= tx[, sapply(strsplit(CNTG,'.',fixed=T),	function(x)  paste(x[1:par['CNF.contig.idx']],collapse='.') )]]
-	tx[, CCNTG:= gsub('^\\.','',gsub(OCNTG, '', CNTG, fixed=1))]
+	tx		<- merge(tx, tx[, list(CCNTG= gsub('^\\.','',gsub(OCNTG, '', CNTG, fixed=1))), by='TAXON' ], by=c('TAXON'))
 	set(tx, tx[, which(nchar(CCNTG)==0)], 'CCNTG', NA_character_)
 	tmp		<- subset(tx, BLASTnCUT=='Y' & !is.na(CCNTG))[, list(CCNTGn=length(CCNTG)), by='OCNTG']
 	tmp		<- subset(tmp, CCNTGn==1)[, OCNTG]	#check for cut contigs that should be present in multiple cuts by naming scheme, but after LTR removal there is only one cut
