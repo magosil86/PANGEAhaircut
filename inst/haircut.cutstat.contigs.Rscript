@@ -44,6 +44,8 @@ BATCHN\tOptional: Number of PANGEA_IDs to process in parallel
 BATCHID\tOptional: Batch ID of PANGEA_IDs that are processed in parallel
 ')
 }
+indir		<- gsub('\\','',indir,fixed=1)
+outdir		<- gsub('\\','',outdir,fixed=1)
 if(verbose)
 {
 	cat('\ninput args\n',paste(indir, outdir, batch.n, batch.id, sep='\n'))

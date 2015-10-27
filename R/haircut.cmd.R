@@ -202,30 +202,13 @@ cmd.haircut.call<- function(indir.st, indir.al, outdir, mfile=NA, trainfile=NA, 
 ##--------------------------------------------------------------------------------------------------------
 ##	command line generator to run 'haircut.cutstat.contigs.Rscript' and 'haircut.call.contigs.Rscript' one after each other
 ##--------------------------------------------------------------------------------------------------------
-#' @title Command line generator to run the Haircut pipeline
-#' @description The haircut pipeline involves two steps. 
-#' First, descriptive statistics are calculated for each contig and the consensus sequence of that associated references.
-#' Second, these descriptive statistics are used to calculate a call probability for 10 base pair long contig chunks.
-#' The call probability is modeled as a function of the descriptive statistics. 
-#' The underlying statistical model is pre-computed and supplied with the R package.
-#' Based on the call probabilites, 10bp chunks of each contig are called (yes=1, no=0). 
-#' If cut/raw contigs correspond to each other, only one of both is returned.
-#' 	 
-#' @example example/ex.cmd.haircut.pipeline.R
-#' @export
-cmd.haircut.pipeline<- function(indir.cut, indir.raw, outdir, batch.n=NA, batch.id=NA)
+cmd.haircut.pipeline.dir<- function(indir.cut, indir.raw, outdir, batch.n=NA, batch.id=NA)
 {
-	#create specific outdir
-	cmd				<- "#######################################################
-#
-# start: run haircut.pipeline
-#
-#######################################################\n"	
 	#create temporary directories
 	aldir		<- paste('algnd_',format(Sys.time(),"%y-%m-%d-%H-%M-%S"),sep='')
 	cutdir		<- paste('cutstat_',format(Sys.time(),"%y-%m-%d-%H-%M-%S"),sep='')
 	outdir.lcl	<- paste('call_',format(Sys.time(),"%y-%m-%d-%H-%M-%S"),sep='')
-	cmd			<- paste(cmd,"CWD=$(pwd)\n",sep='\n')
+	cmd			<- "CWD=$(pwd)\n"
 	cmd			<- paste(cmd,'echo "$CWD"\n',sep='')
 	aldir		<- paste('"$CWD"/',aldir,sep='')
 	cutdir		<- paste('"$CWD"/',cutdir,sep='')
@@ -247,14 +230,59 @@ cmd.haircut.pipeline<- function(indir.cut, indir.raw, outdir, batch.n=NA, batch.
 		cmd		<- paste(cmd, '\nmv ', paste(outdir.lcl,'model150816a_QUANTILESofPRCALLbyCONTIG.csv',sep='/'),' ', paste(outdir.lcl,'/','model150816a_QUANTILESofPRCALLbyCONTIG_batchn',batch.n,'_batchid',batch.id,'.csv',sep=''),sep='')	
 	}	
 	cmd			<- paste(cmd, "\nmv ",outdir.lcl,"/* ",gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',outdir,fixed=T),fixed=T),fixed=T),"\n",sep='')
-	cmd			<- paste(cmd, "rm -r ",aldir," ",outdir.lcl," ",cutdir,"\n",sep='')
+	cmd			<- paste(cmd, "rm -r ",aldir," ",outdir.lcl," ",cutdir,"\n",sep='')	
+	cmd
+}
+##--------------------------------------------------------------------------------------------------------
+##	command line generator to run haircut pipeline on file OR directory
+##--------------------------------------------------------------------------------------------------------
+#' @title Command line generator to run the Haircut pipeline
+#' @description The haircut pipeline involves two steps. 
+#' First, descriptive statistics are calculated for each contig and the consensus sequence of that associated references.
+#' Second, these descriptive statistics are used to calculate a call probability for 10 base pair long contig chunks.
+#' The call probability is modeled as a function of the descriptive statistics. 
+#' The underlying statistical model is pre-computed and supplied with the R package.
+#' Based on the call probabilites, 10bp chunks of each contig are called (yes=1, no=0). 
+#' If cut/raw contigs correspond to each other, only one of both is returned.
+#' 	 
+#' @example example/ex.cmd.haircut.pipeline.R
+#' @export
+cmd.haircut.pipeline<- function(in.cut, in.raw, out, batch.n=NA, batch.id=NA)
+{
+	tmp			<- c( file.info(in.cut)['isdir'], file.info(in.raw)['isdir'], file.info(in.raw)['isdir'])
+	stopifnot( tmp[1]==tmp[2] & tmp[1]==tmp[3])	#either all are files or all are directories	
+	cmd			<- "#######################################################
+#
+# start: run haircut.pipeline
+#
+#######################################################"
+	if(tmp[1]==TRUE)
+		cmd	<- paste(cmd, cmd.haircut.pipeline.dir(in.cut, in.raw, out, batch.n=batch.n, batch.id=batch.id), sep='\n')
+	if(tmp[1]==FALSE)
+	{
+		#	create temporary directories
+		indir.cut	<- paste('inc_',format(Sys.time(),"%y-%m-%d-%H-%M-%S"),sep='')
+		indir.raw	<- paste('inr_',format(Sys.time(),"%y-%m-%d-%H-%M-%S"),sep='')
+		outdir		<- paste('outd_',format(Sys.time(),"%y-%m-%d-%H-%M-%S"),sep='')
+		cmd			<- "CWD=$(pwd)\n"
+		cmd			<- paste(cmd,'echo "$CWD"\n',sep='')
+		indir.cut	<- paste('"$CWD"/',indir.cut,sep='')
+		indir.raw	<- paste('"$CWD"/',indir.raw,sep='')
+		outdir		<- paste('"$CWD"/',outdir,sep='')
+		cmd			<- paste(cmd,"mkdir -p ",indir.cut,'\n',sep='')
+		cmd			<- paste(cmd,"mkdir -p ",indir.raw,'\n',sep='')
+		cmd			<- paste(cmd,"mkdir -p ",outdir,'\n',sep='')
+		#	copy files to directory and go
+		
+	}
 	cmd			<- paste(cmd, "\n#######################################################
 #
 # end: run haircut.pipeline
 #
-#######################################################\n",sep='')
-	cmd
+#######################################################\n",sep='')	
+	ans
 }
+
 ##--------------------------------------------------------------------------------------------------------
 ##	command line generator for 'haircut.check.alignment.Rscript'
 ##--------------------------------------------------------------------------------------------------------

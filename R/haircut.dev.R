@@ -194,10 +194,10 @@ dev.align.haircutcontigs<- function()
 
 dev.haircut<- function()	
 {
-	if(0)	#check size of alignment
+	if(0)	#check alignment: code
 	{
 		indir		<- paste(DATA, 'contigs_150408_wref', sep='/' )
-		indir		<- paste(DATA, 'contigs_150902_wref', sep='/' )
+		indir		<- paste(DATA, 'contigs_150902_wref', sep='/' )				
 		infiles		<- data.table(FILE=list.files(indir, pattern='fasta$', recursive=T))
 		infiles[, PNG_ID:= gsub('\\.fasta','',gsub('_frclen|_refc|_refr|_wRefs','',FILE))]
 		infiles[, AL_TYPE:= gsub('_*','',gsub('\\.fasta','',gsub('[0-9]*','',FILE)))]				
@@ -223,6 +223,19 @@ dev.haircut<- function()
 				}, by='PNG_ID']		
 		
 		cat(cmd.haircut.check.alignment(indir, indir))
+	}
+	if(0)	#check alignment: cmd
+	{
+		indir		<- paste(DATA, 'contigs_151026_wref', sep='/' )		
+		argv		<<- cmd.haircut.check.alignment(indir, indir)
+		argv		<<- paste('-',unlist(strsplit(argv,' -|\n')),sep='')
+	}
+	if(0)
+	{
+		indir		<- paste(DATA, 'contigs_151026_wref', sep='/' )
+		outdir		<- paste(DATA, 'contigs_151026_wref_cutstat', sep='/' )				
+		argv		<<- cmd.haircut.cutstat(indir, outdir, batch.n=200, batch.id=1)
+		argv		<<- paste('-',unlist(strsplit(argv,' -|\n')),sep='')
 	}
 	if(0)
 	{
@@ -685,7 +698,7 @@ pipeline.various<- function()
 			cmd.hpccaller(paste(DATA,"tmp",sep='/'), outfile, cmd)	
 		}
 	}
-	if(1)
+	if(0)
 	{		
 		indir.cut	<- paste(DATA, 'contigs_150408_unaligned_cut', sep='/' )
 		indir.raw	<- paste(DATA, 'contigs_150408_unaligned_raw', sep='/' )
@@ -710,12 +723,14 @@ pipeline.various<- function()
 			cmd.hpccaller(DATA, outfile, cmd)	
 		}
 	}
-	if(0)
+	if(1)
 	{
 		indir		<- paste(DATA, 'contigs_150408_wref', sep='/' )
 		outdir		<- paste(DATA, 'contigs_150408_wref_cutstat', sep='/' )
 		indir		<- paste(DATA, 'contigs_150902_wref', sep='/' )
 		outdir		<- paste(DATA, 'contigs_150902_wref_cutstat', sep='/' )		
+		indir		<- paste(DATA, 'contigs_151026_wref', sep='/' )
+		outdir		<- paste(DATA, 'contigs_151026_wref_cutstat', sep='/' )		
 		
 		batch.n		<- 200
 		tmp			<- data.table(FILE=list.files(indir, pattern='wRefs\\.fasta$', recursive=T))
@@ -726,7 +741,7 @@ pipeline.various<- function()
 			cmd			<- cmd.haircut.cutstat(indir, outdir, batch.n=batch.n, batch.id=batch.id)
 			cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=4, hpc.mem="5000mb")
 			cat(cmd)		
-			cmd.hpccaller(paste(DATA,"tmp",sep='/'), paste("hrct",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)	
+			cmd.hpccaller(DATA, paste("hrct",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)	
 		}	
 	}
 	if(0)
@@ -794,8 +809,8 @@ prog.haircut.150806<- function()
 	}
 	if(0)
 	{
-		indir		<- paste(DATA, 'contigs_150408_wref', sep='/' )
-		outdir		<- paste(DATA, 'contigs_150408_wref_cutstat', sep='/' )				
+		indir		<- paste(DATA, 'contigs_151026_wref', sep='/' )
+		outdir		<- paste(DATA, 'contigs_151026_wref_cutstat', sep='/' )				
 		cat(cmd.haircut.cutstat(indir, outdir, batch.n=200, batch.id=1))		
 	}
 	if(0)

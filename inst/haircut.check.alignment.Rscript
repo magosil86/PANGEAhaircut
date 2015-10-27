@@ -44,6 +44,8 @@ if( is.na(indir) || is.na(outdir))
 					BATCHID\tOptional: Batch ID of PANGEA_IDs that are processed in parallel
 					')
 }
+indir		<- gsub('\\','',indir,fixed=1)
+outdir		<- gsub('\\','',outdir,fixed=1)
 if(verbose)
 {
 	cat('\ninput args\n',paste(indir, outdir, batch.n, batch.id, sep='\n'))
@@ -66,7 +68,7 @@ options(error= my.dumpframes)
 require(PANGEAhaircut)
 infiles		<- data.table(FILE=list.files(indir, pattern='fasta$', recursive=T))
 infiles[, PNG_ID:= gsub('\\.fasta','',gsub('_frclen|_refc|_refr|_wRefs','',FILE))]
-infiles[, AL_TYPE:= gsub('_*','',gsub('\\.fasta','',gsub('[0-9]*','',FILE)))]				
+infiles[, AL_TYPE:= substring(regmatches(FILE,regexpr('_frclen|_refc|_refr|_wRefs', FILE)),2)]				
 tmp			<- infiles[, {
 			#FILE		<- infiles[1,FILE]
 			tmp			<- paste(indir, FILE, sep='/')
@@ -85,10 +87,10 @@ if(nrow(alfixup)>0)
 {	
 	alfixup		<- dcast.data.table(alfixup, PNG_ID~AL_TYPE, value.var='FILE')
 	cat('\nChanging wRef.fasta to cut alignment for n=', nrow(alfixup))
-	alfixup[, {
+	invisible(alfixup[, {
 				file.rename( paste(indir,wRefs,sep='/'), paste(indir,gsub('wRefs\\.fasta','fndrvs\\.fasta',wRefs),sep='/'))
 				file.copy( paste(indir,refc,sep='/'), paste(indir,gsub('refc\\.fasta','wRefs\\.fasta',wRefs),sep='/'), overwrite=TRUE)
 				NULL
-			}, by='PNG_ID']
+			}, by='PNG_ID'])
 }
 NULL

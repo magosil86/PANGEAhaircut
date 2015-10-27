@@ -455,6 +455,8 @@ haircutwrap.get.cut.statistics<- function(indir, par, outdir=indir, batch.n=NA, 
 					}, by='FILE'], by='FILE')
 	cat(paste('\nFound processed files, n=', infiles[, length(which(DONE))]))
 	infiles		<- subset(infiles, !DONE)
+	#	get reference file names
+	crn			<- data.table(TAXON=rownames(read.dna(system.file(package="PANGEAhaircut", "HIV1_COM_2012_genome_DNA_NoLTR.fasta"), format='fasta')), CONTIG=0L)
 	#
 	#	infiles[, which(grepl('15173_1_56',FILE))]	fls<- 1224
 	#	process files
@@ -474,8 +476,8 @@ haircutwrap.get.cut.statistics<- function(indir, par, outdir=indir, batch.n=NA, 
 			cr		<- cr[, seq.int(1, haircut.find.lastRefSite(cr))]		
 			#	determine reference sequences. 
 			#	non-refs have the first part of the file name in their contig name and are at the top of the alignment
-			tmp		<- strsplit(basename(file), '_')[[1]][1]
-			tx		<- data.table(TAXON= rownames(cr), CONTIG=as.integer(grepl(tmp, rownames(cr))) )
+			tx		<- merge(data.table(TAXON= rownames(cr)), crn, by='TAXON',all.x=1)
+			set(tx, tx[, which(is.na(CONTIG))], 'CONTIG', 1L)
 			tx		<- tx[order(-CONTIG, na.last=TRUE)]
 			cr		<- cr[tx[,TAXON],]			
 			cat(paste('\nFound contigs, n=', tx[, length(which(CONTIG==1))]))
@@ -498,7 +500,7 @@ haircutwrap.get.cut.statistics<- function(indir, par, outdir=indir, batch.n=NA, 
 			#ggplot(cnsc.df, aes(x=SITE)) +facet_wrap(~TAXON, ncol=1) + geom_line(aes(y=FRQ), colour='black') + geom_line(aes(y=AGRpc), colour='blue') + geom_line(aes(y=GPS), colour='red') + geom_line(aes(y=FRQ-2*FRQ_STD), colour='DarkGreen')
 			cnsc.df[, PNG_ID:= infiles[fls, PNG_ID]]
 			cnsc.df[, BLASTnCUT:= cnsc.df[, factor(grepl('cut',TAXON),levels=c(TRUE,FALSE),labels=c('Y','N'))]]
-			cat(paste('\nSave contigs, n=', cnsc.df[, length(unique(TAXON))]))
+			cat(paste('\nSave contigs+consensus, n=', cnsc.df[, length(unique(TAXON))]))
 			#	save
 			file	<- paste(outdir, '/', gsub('\\.fasta',paste('_HAIRCUTSTAT_thr',100*par['FRQx.quantile'],'_aw',par['CNS_AGR.window'],'_fw',par['CNS_FRQ.window'],'_gw',par['GPS.window'],'.R',sep=''),basename(file)), sep='')
 			cat(paste('\nSave to', file))
