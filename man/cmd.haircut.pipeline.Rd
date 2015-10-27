@@ -3,8 +3,8 @@
 \alias{cmd.haircut.pipeline}
 \title{Command line generator to run the Haircut pipeline}
 \usage{
-cmd.haircut.pipeline(in.raw, in.cut = NA, out = paste(in.raw, "_nohair", sep
-  = ""), batch.n = NA, batch.id = NA)
+cmd.haircut.pipeline(in.raw, in.cut = NA, out = NA, batch.n = NA,
+  batch.id = NA, CNF.contig.idx = 1)
 }
 \description{
 The haircut pipeline involves two steps.
@@ -31,7 +31,7 @@ cat(cmd.haircut.pipeline(in.raw))
 #
 \dontrun{
 
-in.raw	<- '/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_151026_unaligned_cut/78270.assembly_contigs_hit_ref_hiv.fasta'
+in.raw	<- '/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_151026_unaligned_raw/78270.assembly_contigs_hit_ref_hiv.fasta'
 in.cut	<- '/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_151026_unaligned_cut/78270.assembly_contigs_hit_ref_hiv_cut.fasta'
 out		<- '/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/78270_nohair.fasta'		
 cat(cmd.haircut.pipeline(in.raw, in.cut, out))
