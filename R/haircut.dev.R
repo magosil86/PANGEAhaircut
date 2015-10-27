@@ -237,6 +237,19 @@ dev.haircut<- function()
 		argv		<<- cmd.haircut.cutstat(indir, outdir, batch.n=200, batch.id=1)
 		argv		<<- paste('-',unlist(strsplit(argv,' -|\n')),sep='')
 	}
+	if(1)
+	{
+		indir.st	<- paste(DATA,'contigs_150408_wref_cutstat',sep='/')
+		indir.al	<- paste(DATA,'contigs_150408_wref',sep='/')
+		outdir		<- paste(DATA,'contigs_150408_model150816a',sep='/')
+		indir.st	<- paste(DATA,'contigs_151026_wref_cutstat',sep='/')
+		indir.al	<- paste(DATA,'contigs_151026_wref',sep='/')
+		outdir		<- paste(DATA,'contigs_151026_model150816b',sep='/')
+		
+		argv		<<- cmd.haircut.call(indir.st, indir.al, outdir)
+		argv		<<- paste('-',unlist(strsplit(argv,' -|\n')),sep='')
+		
+	}
 	if(0)
 	{
 		#fixup mafft
@@ -812,13 +825,6 @@ prog.haircut.150806<- function()
 		indir		<- paste(DATA, 'contigs_151026_wref', sep='/' )
 		outdir		<- paste(DATA, 'contigs_151026_wref_cutstat', sep='/' )				
 		cat(cmd.haircut.cutstat(indir, outdir, batch.n=200, batch.id=1))		
-	}
-	if(0)
-	{
-		indir.st	<- paste(DATA,'contigs_150408_wref_cutstat',sep='/')
-		indir.al	<- paste(DATA,'contigs_150408_wref',sep='/')
-		outdir		<- paste(DATA,'contigs_150408_model150816a',sep='/')
-		cmd			<- cmd.haircut.call(indir.st, indir.al, outdir)		
 	}
 	if(0)
 	{

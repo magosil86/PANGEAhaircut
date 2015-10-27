@@ -105,6 +105,42 @@ cmdwrap.align.contigs.with.ref<- function(indir.cut, indir.raw, outdir, reffile=
 	cmd
 }
 ##--------------------------------------------------------------------------------------------------------
+##	process file with 'haircut.align.contigs.with.ref'
+##--------------------------------------------------------------------------------------------------------
+cmdwrap.align.contigs.with.ref.file<- function(infile.cut, infile.raw, outdir, reffile=NA)
+{
+	if(is.na(reffile))
+		reffile	<- system.file(package="PANGEAhaircut", "HIV1_COM_2012_genome_DNA_NoLTR.fasta")
+	png_id		<- gsub('_hiv','',gsub('\\.fasta','',gsub('_cut|_raw','',basename(infile.raw))))	
+	outfile1	<- paste(png_id,'_c.fasta',sep='')
+	outfile2	<- paste(png_id,'_refc.fasta',sep='')
+	outfile3	<- paste(png_id,'_wRefs.fasta',sep='')	
+	outfile4	<- paste(png_id,'_refr.fasta',sep='')
+	outfile5	<- paste(png_id,'_frclen.fasta',sep='')		
+	cmd			<- "\n#######################################################
+# start: run cmdwrap.align.contigs.with.ref
+#######################################################"
+	if(is.na(infile.cut))
+	{
+		cmd		<- paste(cmd, cmd.align.contigs.with.ref(infile.raw, reffile, paste(outdir,'/',outfile3,sep='')), sep='\n')					
+	}
+	if(!is.na(infile.cut))
+	{
+		cmd		<- paste(cmd, cmd.add.tag.to.fasta.names( infile.cut, paste(outdir,'/',outfile1,sep=''), tag='_cut'), sep='\n')
+		cmd		<- paste(cmd, cmd.align.contigs.with.ref(paste(outdir,'/',outfile1,sep=''), reffile, paste(outdir,'/',outfile2,sep='')), sep='\n')
+		cmd		<- paste(cmd, cmd.align.contigs.with.ref(infile.raw, paste(outdir,'/',outfile2,sep=''), paste(outdir,'/',outfile3,sep='')), sep='\n')
+		cmd		<- paste(cmd, cmd.align.contigs.with.ref(infile.raw, paste(outdir,'/',outfile2,sep=''), paste(outdir,'/',outfile5,sep=''), options='--keeplength --op 0.1'), sep='\n')
+		cmd		<- paste(cmd, cmd.align.contigs.with.ref(infile.raw, reffile, paste(outdir,'/',outfile4,sep='')), sep='\n')		
+		tmp		<- paste(outdir,'/',outfile1,sep='')
+		tmp		<- gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',tmp,fixed=T),fixed=T),fixed=T)
+		cmd		<- paste(cmd, '\n','rm ',tmp,sep='')	
+	}
+	cmd			<- paste(cmd,"\n#######################################################
+# end: run cmdwrap.align.contigs.with.ref
+#######################################################\n",sep='')
+	cmd
+}
+##--------------------------------------------------------------------------------------------------------
 ##	Use Chris s python script to flatten contigs in file
 ##--------------------------------------------------------------------------------------------------------
 cmd.flatten.contigs<- function(infile, infile.args, outfile, prog=PR.FLATTENCNTGS)
@@ -180,13 +216,16 @@ cmd.add.tag.to.fasta.names<- function(infile, outfile, tag)
 ##	command line generator for 'haircut.call.contigs.Rscript'
 ##--------------------------------------------------------------------------------------------------------
 #' @export
-cmd.haircut.call<- function(indir.st, indir.al, outdir, mfile=NA, trainfile=NA, batch.n=NA, batch.id=NA, prog=PR.HAIRCUT.CALL )	
+cmd.haircut.call<- function(indir.st, indir.al, outdir, mfile=NA, trainfile=NA, batch.n=NA, batch.id=NA, prog=PR.HAIRCUT.CALL, CNF.contig.idx=1 )	
 {
 	cmd<- "\n#######################################################
 # start: run haircut.call.contigs.Rscript
 #######################################################"
 	cmd		<- paste(cmd, paste("\necho \'run ",prog,"\'\n",sep=''))
-	cmd		<- paste(cmd, paste(prog,' -indir.st=',gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',indir.st,fixed=T),fixed=T),fixed=T),' -indir.al=',gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',indir.al,fixed=T),fixed=T),fixed=T),' -outdir=',gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',outdir,fixed=T),fixed=T),fixed=T), sep=''))
+	cmd		<- paste(cmd, paste(prog,	' -indir.st=',gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',indir.st,fixed=T),fixed=T),fixed=T),
+										' -indir.al=',gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',indir.al,fixed=T),fixed=T),fixed=T),
+										' -outdir=',gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',outdir,fixed=T),fixed=T),fixed=T),
+										' -CNF.contig.idx=', CNF.contig.idx, sep=''))
 	if(!is.na(mfile))
 		cmd	<- paste(cmd, ' -mfile=',mfile, sep='')	
 	if(!is.na(trainfile))
@@ -200,9 +239,9 @@ cmd.haircut.call<- function(indir.st, indir.al, outdir, mfile=NA, trainfile=NA, 
 	cmd
 }
 ##--------------------------------------------------------------------------------------------------------
-##	command line generator to run 'haircut.cutstat.contigs.Rscript' and 'haircut.call.contigs.Rscript' one after each other
+##	command line generator to run haircut pipeline on directory
 ##--------------------------------------------------------------------------------------------------------
-cmd.haircut.pipeline.dir<- function(indir.raw, indir.cut, outdir, batch.n=NA, batch.id=NA)
+cmd.haircut.pipeline.dir<- function(indir.raw, indir.cut, outdir, batch.n=NA, batch.id=NA, CNF.contig.idx=1)
 {
 	#create temporary directories
 	aldir		<- paste('algnd_',format(Sys.time(),"%y-%m-%d-%H-%M-%S"),sep='')
@@ -223,7 +262,7 @@ cmd.haircut.pipeline.dir<- function(indir.raw, indir.cut, outdir, batch.n=NA, ba
 	#run cutstat on all seqs in aldir
 	cmd			<- paste(cmd, cmd.haircut.cutstat(aldir, cutdir), sep='')
 	#run call on all seqs in cutdir
-	cmd			<- paste(cmd, cmd.haircut.call(cutdir, aldir, outdir.lcl), sep='')
+	cmd			<- paste(cmd, cmd.haircut.call(cutdir, aldir, outdir.lcl, CNF.contig.idx=CNF.contig.idx), sep='')
 	#copy to destination
 	if(!is.na(batch.n) & !is.na(batch.id))
 	{
@@ -231,6 +270,39 @@ cmd.haircut.pipeline.dir<- function(indir.raw, indir.cut, outdir, batch.n=NA, ba
 	}	
 	cmd			<- paste(cmd, "\nmv ",outdir.lcl,"/* ",gsub(' ','\\ ',gsub('(','\\(',gsub(')','\\)',outdir,fixed=T),fixed=T),fixed=T),"\n",sep='')
 	cmd			<- paste(cmd, "rm -r ",aldir," ",outdir.lcl," ",cutdir,"\n",sep='')	
+	cmd
+}
+##--------------------------------------------------------------------------------------------------------
+##	command line generator to run haircut pipeline on file
+##--------------------------------------------------------------------------------------------------------
+cmd.haircut.pipeline.file<- function(infile.raw, infile.cut, outfile, CNF.contig.idx=1)
+{
+	#create temporary directories
+	aldir		<- paste('algnd_',format(Sys.time(),"%y-%m-%d-%H-%M-%S"),sep='')
+	cutdir		<- paste('cutstat_',format(Sys.time(),"%y-%m-%d-%H-%M-%S"),sep='')
+	outdir.lcl	<- paste('call_',format(Sys.time(),"%y-%m-%d-%H-%M-%S"),sep='')
+	cmd			<- "CWD=$(pwd)\n"
+	cmd			<- paste(cmd,'echo "$CWD"\n',sep='')
+	aldir		<- paste('"$CWD"/',aldir,sep='')
+	cutdir		<- paste('"$CWD"/',cutdir,sep='')
+	outdir.lcl	<- paste('"$CWD"/',outdir.lcl,sep='')
+	cmd			<- paste(cmd,"mkdir -p ",aldir,'\n',sep='')
+	cmd			<- paste(cmd,"mkdir -p ",cutdir,'\n',sep='')
+	cmd			<- paste(cmd,"mkdir -p ",outdir.lcl,'',sep='')
+	#run alignment of references on batch into aldir
+	cmd			<- paste(cmd, cmdwrap.align.contigs.with.ref.file(infile.cut, infile.raw, aldir), sep='')
+	#check alignments and decide which one to keep
+	cmd			<- paste(cmd, cmd.haircut.check.alignment(aldir, aldir), sep='')
+	#run cutstat on all seqs in aldir
+	cmd			<- paste(cmd, cmd.haircut.cutstat(aldir, cutdir), sep='')
+	#run call on all seqs in cutdir
+	cmd			<- paste(cmd, cmd.haircut.call(cutdir, aldir, outdir.lcl, CNF.contig.idx=CNF.contig.idx), sep='')
+	#copy to destination
+	cmd			<- paste(cmd, "if [ $(find ",outdir.lcl," -name '*fasta' | wc -l) -eq 1 ]; then\n\t",'mv ', outdir.lcl,'/*fasta',' "', outfile, '"\nfi\n', sep='')	
+	cmd			<- paste(cmd, "if [ $(find ",outdir.lcl," -name '*R' | wc -l) -eq 1 ]; then\n\t",'mv ', outdir.lcl,'/*R',' "', gsub('fasta$|fa$','R',outfile), '"\nfi\n', sep='')
+	cmd			<- paste(cmd, "if [ $(find ",outdir.lcl," -name '*pdf' | wc -l) -eq 1 ]; then\n\t",'mv ', outdir.lcl,'/*pdf',' "', gsub('fasta$|fa$','pdf',outfile), '"\nfi\n', sep='')
+	cmd			<- paste(cmd, "if [ $(find ",outdir.lcl," -name '*csv' | wc -l) -eq 1 ]; then\n\t",'mv ', paste(outdir.lcl,'model150816a_QUANTILESofPRCALLbyCONTIG.csv',sep='/'),' "', gsub('fasta$|fa$','csv',outfile), '"\nfi\n', sep='')
+	cmd			<- paste(cmd, "rm -r ",aldir," ",cutdir," ",outdir.lcl,sep='')	
 	cmd
 }
 ##--------------------------------------------------------------------------------------------------------
@@ -248,54 +320,39 @@ cmd.haircut.pipeline.dir<- function(indir.raw, indir.cut, outdir, batch.n=NA, ba
 #' @example example/ex.cmd.haircut.pipeline_file.R 	 
 #' @example example/ex.cmd.haircut.pipeline.R
 #' @export
-cmd.haircut.pipeline<- function(in.raw, in.cut=NA, out=paste(in.raw,'_nohair',sep=''), batch.n=NA, batch.id=NA)
+cmd.haircut.pipeline<- function(in.raw, in.cut=NA, out=NA, batch.n=NA, batch.id=NA, CNF.contig.idx=1)
 {
-	tmp			<- c( file.info(in.raw)['isdir'], file.info(out)['isdir'])
-	stopifnot( tmp[1]==tmp[2])		#either all are files or all are directories
-	if(tmp[1])
-		stopifnot(!is.na(in.cut))	#if in.raw is dir, then in.cut must be specified
+	stopifnot( file.exists(in.raw) )
+	tmp			<- as.logical(file.info(in.raw)['isdir'])
+	if(tmp)
+		stopifnot( !is.na(out), !is.na(in.cut))	
+	if(!tmp)
+		stopifnot( grepl('fasta$|fa$', in.raw) )
 	if(!is.na(in.cut))
-		stopifnot( tmp[1]==tmp[2] & tmp[1]==file.info(in.cut)['isdir'])	#either all are files or all are directories
+		stopifnot( file.exists(in.cut),  tmp==file.info(in.cut)['isdir'])
+	if(!is.na(out) & !tmp)
+		stopifnot( grepl('fasta$|fa$', in.cut) )	
+	if(!is.na(out) & tmp)
+		stopifnot( file.exists(out),  tmp==file.info(out)['isdir'])
+	if(!is.na(out) & !tmp)
+		stopifnot( grepl('fasta$|fa$', out) )
+	if(is.na(out))
+		out		<- gsub('\\.fasta$|\\.fa$','_nohair\\.fasta',in.raw)
 	cmd			<- "#######################################################
 #
 # start: run haircut.pipeline
 #
 #######################################################"
-	if(tmp[1]==TRUE)
-		cmd	<- paste(cmd, cmd.haircut.pipeline.dir(in.raw, in.cut, out, batch.n=batch.n, batch.id=batch.id), sep='\n')
-	if(tmp[1]==FALSE)
-	{
-		#	create temporary directories
-		indir.cut	<- paste('inc_',format(Sys.time(),"%y-%m-%d-%H-%M-%S"),sep='')
-		indir.raw	<- paste('inr_',format(Sys.time(),"%y-%m-%d-%H-%M-%S"),sep='')
-		outdir		<- paste('outd_',format(Sys.time(),"%y-%m-%d-%H-%M-%S"),sep='')
-		cmd			<- paste(cmd,"\nCWD=$(pwd)\n",sep='')
-		cmd			<- paste(cmd,'echo "$CWD"\n',sep='')
-		indir.cut	<- paste('"$CWD"/',indir.cut,sep='')
-		indir.raw	<- paste('"$CWD"/',indir.raw,sep='')
-		outdir		<- paste('"$CWD"/',outdir,sep='')
-		cmd			<- paste(cmd,"mkdir -p ",indir.cut,'\n',sep='')
-		cmd			<- paste(cmd,"mkdir -p ",indir.raw,'\n',sep='')
-		cmd			<- paste(cmd,"mkdir -p ",outdir,'\n',sep='')
-		#	copy files to temp directory		
-		cmd			<- paste(cmd,"cp ",in.raw,' ',indir.raw,'/',basename(in.raw),'\n',sep='')
-		if(!is.na(in.cut))
-			cmd		<- paste(cmd,"cp ",in.cut,' ',indir.cut,'/',basename(in.cut),'\n',sep='')
-		#	call pipeline on temp directory
-		cmd			<- paste(cmd, cmd.haircut.pipeline.dir(indir.raw, indir.cut, outdir, batch.n=NA, batch.id=NA), sep='\n')
-		#	clean up
-		cmd		<- paste(cmd, 'mv ', outdir,'/*fasta',' ', out, '\n',sep='')
-		cmd		<- paste(cmd, 'mv ', outdir,'/*pdf',' ', paste(gsub('fasta$|fa$','',out),'pdf'), '\n',sep='')
-		cmd		<- paste(cmd, 'mv ', outdir,'/*R',' ', paste(gsub('fasta$|fa$','',out),'R'), '\n',sep='')
-		cmd		<- paste(cmd, 'mv ', paste(outdir,'model150816a_QUANTILESofPRCALLbyCONTIG.csv',sep='/'),' ',paste(gsub('fasta$|fa$','',out),'csv'), '\n',sep='')		
-		cmd		<- paste(cmd, "rm -r ",indir.cut," ",indir.raw," ",outdir,sep='')
-	}
+	if(tmp)
+		cmd	<- paste(cmd, cmd.haircut.pipeline.dir(in.raw, in.cut, out, batch.n=batch.n, batch.id=batch.id, CNF.contig.idx=CNF.contig.idx), sep='\n')
+	if(!tmp)
+		cmd	<- paste(cmd, cmd.haircut.pipeline.file(in.raw, in.cut, out, CNF.contig.idx=CNF.contig.idx), sep='\n')		
 	cmd			<- paste(cmd, "\n#######################################################
 #
 # end: run haircut.pipeline
 #
 #######################################################\n",sep='')	
-	ans
+	cmd
 }
 ##--------------------------------------------------------------------------------------------------------
 ##	command line generator for 'haircut.check.alignment.Rscript'

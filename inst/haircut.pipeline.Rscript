@@ -1,0 +1,49 @@
+args <- commandArgs()
+if(!any(args=='--args'))
+	args<- vector("numeric",0)
+if(any(args=='--args'))
+	args<- args[-(1:match("--args", args)) ]
+#	default args
+verbose			<- 1
+in.raw			<- NA
+in.cut			<- NA
+out				<- NA
+CNF.contig.idx	<- 1
+if(length(args))
+{
+	#	args input
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,7),
+								in.raw= return(substr(arg,9,nchar(arg))),NA)	}))
+	if(length(tmp)>0) in.raw<- tmp[1]		
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,7),
+								in.cut= return(substr(arg,9,nchar(arg))),NA)	}))
+	if(length(tmp)>0) in.cut<- tmp[1]
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,4),
+								out= return(substr(arg,6,nchar(arg))),NA)	}))
+	if(length(tmp)>0) out<- tmp[1]			
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,15),
+								CNF.contig.idx= return(as.numeric(substr(arg,17,nchar(arg)))),NA)	}))
+	if(length(tmp)>0) CNF.contig.idx<- tmp[1]	
+}
+if( is.na(in.raw) )
+{
+	stop('\nUsage:
+Rscript haircut.pipeline.Rscript -in.raw=INRAW [ -in.cut=INCUT -out=OUT -CNF.contig.idx=CNF.contig.idx ]
+where
+INRAW\tIVA input file or directory of IVA input files
+INCUT\tcut IVA input file or directory of cut IVA input files
+OUT\toutput file or directory
+CNF.contig.idx\tOptional: Index in contig names at which the contig ID is found. E.g. ".97141.001" --> index is 1; ".97141.contig.001" --> index is 2.
+')
+}
+
+in.raw		<- gsub("^\\s+|\\s+$", "", gsub('\\','',in.raw,fixed=1))
+in.cut		<- gsub("^\\s+|\\s+$", "", gsub('\\','',in.cut,fixed=1))
+out			<- gsub("^\\s+|\\s+$", "", gsub('\\','',out,fixed=1))
+#	run script
+require(PANGEAhaircut)
+cmd.haircut.pipeline(in.raw, in.cut, out)

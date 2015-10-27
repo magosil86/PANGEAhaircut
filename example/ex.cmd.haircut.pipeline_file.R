@@ -13,7 +13,7 @@ cat(cmd.haircut.pipeline(in.raw))
 #
 \dontrun{
 
-in.raw	<- '/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_151026_unaligned_cut/78270.assembly_contigs_hit_ref_hiv.fasta'
+in.raw	<- '/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_151026_unaligned_raw/78270.assembly_contigs_hit_ref_hiv.fasta'
 in.cut	<- '/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_151026_unaligned_cut/78270.assembly_contigs_hit_ref_hiv_cut.fasta'
 out		<- '/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/78270_nohair.fasta'		
 cat(cmd.haircut.pipeline(in.raw, in.cut, out))

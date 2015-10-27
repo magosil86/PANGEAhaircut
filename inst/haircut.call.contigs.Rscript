@@ -16,6 +16,7 @@ indir.al		<- NA
 outdir			<- NA
 batch.n			<- NA
 batch.id		<- NA
+CNF.contig.idx	<- 1
 if(length(args))
 {
 	#	args input
@@ -47,6 +48,10 @@ if(length(args))
 					{	switch(substr(arg,2,9),
 								batch.id= return(as.numeric(substr(arg,11,nchar(arg)))),NA)	}))
 	if(length(tmp)>0) batch.id<- tmp[1]
+	tmp<- na.omit(sapply(args,function(arg)
+					{	switch(substr(arg,2,15),
+								CNF.contig.idx= return(as.numeric(substr(arg,17,nchar(arg)))),NA)	}))
+	if(length(tmp)>0) CNF.contig.idx<- tmp[1]	
 }
 if( is.na(indir.st) || is.na(indir.al) || is.na(outdir))
 {
@@ -60,8 +65,14 @@ MFILE\tOptional: model file, R objects therein are used to calculate the call pr
 TRAINFILE\tOptional: model file, containing manually curated contigs
 BATCHN\tOptional: Number of PANGEA_IDs to process in parallel 
 BATCHID\tOptional: Batch ID of PANGEA_IDs that are processed in parallel
+CNF.contig.idx\tOptional: Index in contig names at which the contig ID is found. E.g. ".97141.001" --> index is 1; ".97141.contig.001" --> index is 2.
 ')
 }
+
+indir.st	<- gsub("^\\s+|\\s+$", "", gsub('\\','',indir.st,fixed=1))
+indir.al	<- gsub("^\\s+|\\s+$", "", gsub('\\','',indir.al,fixed=1))
+outdir		<- gsub("^\\s+|\\s+$", "", gsub('\\','',outdir,fixed=1))
+
 if(verbose)
 {
 	cat('\ninput args\n',paste(mfile, trainfile, indir.st, indir.al, outdir, batch.n, batch.id, sep='\n'))
@@ -94,7 +105,8 @@ if(!is.na(trainfile))
 	setnames(ctrain, 'CUT', 'BLASTnCUT')				
 }
 #	get covariates for all contigs
-par		<- c(	'FRQx.quantile'=NA, 'FRQx.thr'=NA, 'CNS_FRQ.window'=200, 'CNS_AGR.window'=200, 'GPS.window'=200, 
+par		<- c(	'CNF.contig.idx'= CNF.contig.idx,
+				'FRQx.quantile'=NA, 'FRQx.thr'=NA, 'CNS_FRQ.window'=200, 'CNS_AGR.window'=200, 'GPS.window'=200, 
 				'PRCALL.thrmax'=0.8, 'PRCALL.thrstd'=10, 'PRCALL.cutprdcthair'=150, 'PRCALL.cutprdctcntg'=50, 'PRCALL.cutrawgrace'=100, 'PRCALL.rmintrnlgpsblw'=100 ,'PRCALL.rmintrnlgpsend'=9700,
 				'PRCALL.mxgpinref'=100)
 haircutwrap.get.call.for.PNG_ID(indir.st,indir.al,outdir,ctrmc,predict.fun,par,ctrain=ctrain, batch.n=batch.n, batch.id=batch.id)

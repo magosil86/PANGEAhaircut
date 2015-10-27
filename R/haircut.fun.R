@@ -25,6 +25,8 @@ haircutwrap.get.call.for.PNG_ID<- function(indir.st,indir.al,outdir,ctrmc,predic
 		infiles[, BATCH:= ceiling(seq_len(nrow(infiles))/batch.n)]
 		infiles		<- subset(infiles, BATCH==batch.id)
 	}
+	#	get reference file names
+	crn			<- data.table(TAXON=rownames(read.dna(system.file(package="PANGEAhaircut", "HIV1_COM_2012_genome_DNA_NoLTR.fasta"), format='fasta')), CONTIG=0L)	
 	#	predict by PANGEA_ID
 	cnsc.info	<-  infiles[,
 			{
@@ -51,54 +53,55 @@ haircutwrap.get.call.for.PNG_ID<- function(indir.st,indir.al,outdir,ctrmc,predic
 					#PNG_ID<- png_id	<- '14760_1_1'
 					#PNG_ID<- png_id	<- '15034_1_75'
 					#PNG_ID<- png_id	<- '14944_1_17'
-					PNG_ID<- png_id	<- '15173_1_56'
+					#PNG_ID<- png_id	<- '15173_1_56'
+					PNG_ID	<- png_id <- '100888.assembly_contigs_hit_ref'
 					files	<- subset(infiles, PNG_ID==png_id)[, INFILE]
 					alfiles	<- subset(infiles, PNG_ID==png_id)[, ALFILE]								
-					tmp		<- haircut.get.call.for.PNG_ID(indir.st, indir.al, png_id, files, alfiles, par, ctrmc, predict.fun)
+					tmp		<- haircut.get.call.for.PNG_ID(indir.st, indir.al, png_id, files, alfiles, par, ctrmc, predict.fun, crn)
 				}			
 				if(1)
-					tmp		<- haircut.get.call.for.PNG_ID(indir.st, indir.al, PNG_ID, INFILE, ALFILE, par, ctrmc, predict.fun)							
+					tmp		<- haircut.get.call.for.PNG_ID(indir.st, indir.al, PNG_ID, INFILE, ALFILE, par, ctrmc, predict.fun, crn)							
 						
 				cr		<- tmp$cr
 				cnsc.df	<- tmp$cnsc.df	
 				conf	<- tmp$conf
 				#	handle output
-				if(any(grepl(PNG_ID,rownames(cr))))
+				if(length(setdiff(rownames(cr), crn[,TAXON]))>1)
 				{
 					tmp		<- paste(outdir,'/',PNG_ID,'_wref_nohair.fasta',sep='')
 					cat('\nWrite to file', tmp)
-					write.dna(cr, file=tmp, format='fasta', colsep='', nbcol=-1)							
+					write.dna(cr, file=tmp, format='fasta', colsep='', nbcol=-1)
+					#	save as R
+					tmp	<- paste(outdir, '/', PNG_ID, '_wref_nohair.R',sep='')
+					cat('\nSave to file', tmp)
+					save(cnsc.df, cr, file=tmp)	
+					#	handle plotting
+					set(cnsc.df, NULL, 'TAXON', cnsc.df[, gsub('_cut','',TAXON)]) 
+					#	see if there is curated contig available
+					if(!is.null(ctrain))
+					{
+						cnsc.df	<- merge(cnsc.df, subset(ctrain, select=c(PNG_ID, TAXON, BLASTnCUT, ANS_FIRST, ANS_LAST)), all.x=T, by=c('PNG_ID','TAXON','BLASTnCUT'))		
+						cnsc.df[, CUR_CALL:=NA_integer_]
+						set(cnsc.df, cnsc.df[, which(!is.na(ANS_FIRST) & SITE>=ANS_FIRST & SITE<=ANS_LAST)], 'CUR_CALL', 1L)
+						set(cnsc.df, cnsc.df[, which(!is.na(ANS_FIRST) & (SITE<ANS_FIRST | SITE>ANS_LAST))], 'CUR_CALL', 0L)
+						set(cnsc.df, cnsc.df[, which(is.na(CUR_CALL))], 'CUR_CALL', 0L)								
+					}	
+					if(is.null(ctrain))
+						cnsc.df[, CUR_CALL:=NA_integer_]
+					#	plot				
+					cnsc.df[, TAXONnCUT:= cnsc.df[, paste(TAXON,'_cut=',BLASTnCUT,sep='')]]
+					ggplot(cnsc.df, aes(x=SITE, fill=BLASTnCUT, group=TAXONnCUT)) +
+							geom_ribbon(aes(ymax=CALL, ymin=0), alpha=0.5) +
+							geom_line(aes(y=PR_CALL), colour='black') +
+							geom_line(aes(y=CNS_PR_CALL), colour='blue') +
+							geom_line(aes(y=CUR_CALL), colour='red') +
+							scale_x_continuous(breaks=seq(0,15e3, ifelse(cnsc.df[,max(SITE)]>5e2, 5e2, floor(cnsc.df[,max(SITE)/3])))) + 
+							facet_wrap(~TAXONnCUT, ncol=1) + theme_bw() + theme(legend.position='bottom') +
+							labs(fill='Contig BLASTnCUT', x='position on consensus w/o LTR', y='fill: predicted call\nblack line: predictive probability\nblue line: threshold\nred line: curated call')
+					tmp		<- paste(outdir, '/', PNG_ID, '_wref_nohair.pdf',sep='')
+					cat('\nPlot to file', tmp)
+					ggsave(w=10, h=3*cnsc.df[, length(unique(TAXON))], file=tmp)					
 				}
-				#	save as R
-				tmp	<- paste(outdir, '/', PNG_ID, '_wref_nohair.R',sep='')
-				cat('\nSave to file', tmp)
-				save(cnsc.df, cr, file=tmp)
-				#	handle plotting
-				set(cnsc.df, NULL, 'TAXON', cnsc.df[, gsub('_cut','',TAXON)]) 
-				#	see if there is curated contig available
-				if(!is.null(ctrain))
-				{
-					cnsc.df	<- merge(cnsc.df, subset(ctrain, select=c(PNG_ID, TAXON, BLASTnCUT, ANS_FIRST, ANS_LAST)), all.x=T, by=c('PNG_ID','TAXON','BLASTnCUT'))		
-					cnsc.df[, CUR_CALL:=NA_integer_]
-					set(cnsc.df, cnsc.df[, which(!is.na(ANS_FIRST) & SITE>=ANS_FIRST & SITE<=ANS_LAST)], 'CUR_CALL', 1L)
-					set(cnsc.df, cnsc.df[, which(!is.na(ANS_FIRST) & (SITE<ANS_FIRST | SITE>ANS_LAST))], 'CUR_CALL', 0L)
-					set(cnsc.df, cnsc.df[, which(is.na(CUR_CALL))], 'CUR_CALL', 0L)								
-				}	
-				if(is.null(ctrain))
-					cnsc.df[, CUR_CALL:=NA_integer_]
-				#	plot				
-				cnsc.df[, TAXONnCUT:= cnsc.df[, paste(TAXON,'_cut=',BLASTnCUT,sep='')]]
-				ggplot(cnsc.df, aes(x=SITE, fill=BLASTnCUT, group=TAXONnCUT)) +
-						geom_ribbon(aes(ymax=CALL, ymin=0), alpha=0.5) +
-						geom_line(aes(y=PR_CALL), colour='black') +
-						geom_line(aes(y=CNS_PR_CALL), colour='blue') +
-						geom_line(aes(y=CUR_CALL), colour='red') +
-						scale_x_continuous(breaks=seq(0,15e3, ifelse(cnsc.df[,max(SITE)]>5e2, 5e2, floor(cnsc.df[,max(SITE)/3])))) + 
-						facet_wrap(~TAXONnCUT, ncol=1) + theme_bw() + theme(legend.position='bottom') +
-						labs(fill='Contig BLASTnCUT', x='position on consensus w/o LTR', y='fill: predicted call\nblack line: predictive probability\nblue line: threshold\nred line: curated call')
-				tmp		<- paste(outdir, '/', PNG_ID, '_wref_nohair.pdf',sep='')
-				cat('\nPlot to file', tmp)
-				ggsave(w=10, h=3*cnsc.df[, length(unique(TAXON))], file=tmp)
 				#	report confidence score
 				tmp		<- subset(cnsc.df, CALL==1)[, list(QUANTILE=c(0,0.01,0.05,0.1,0.2,0.5), PR_CALL=quantile(PR_CALL, p=c(0,0.01,0.05,0.1,0.2,0.5))), by=c('TAXON','BLASTnCUT')]
 				if(!conf)
@@ -119,8 +122,9 @@ haircutwrap.get.call.for.PNG_ID<- function(indir.st,indir.al,outdir,ctrmc,predic
 ##		1)	do not return duplicate contigs (ie cut and raw, if both are to be kept)
 ##		2)	do not return raw contigs if cut exists and if raw extends into LTR
 ##--------------------------------------------------------------------------------------------------------
-haircut.get.call.for.PNG_ID<- function(indir.st, indir.al, png_id, files, alfiles, par, ctrmc, predict.fun)	
+haircut.get.call.for.PNG_ID<- function(indir.st, indir.al, png_id, files, alfiles, par, ctrmc, predict.fun, crn)	
 {
+	require(qualV)
 	conf	<- 1
 	#	load covariates
 	stopifnot(length(files)==1, length(alfiles)==1)
@@ -140,7 +144,7 @@ haircut.get.call.for.PNG_ID<- function(indir.st, indir.al, png_id, files, alfile
 		rp[, COV_NOGP:= COV-FRQ*COV]
 		rp[, GPinREF:= as.integer(COV_NOGP<1)]	
 		tmp		<- rp[, gregexpr('1+',paste(GPinREF,collapse=''))[[1]]]
-		rp[, paste(GPinREF,collapse='')]
+		#rp[, paste(GPinREF,collapse='')]
 		rp		<- data.table(CALL_ID= seq_along(tmp), CALL_POS=as.integer(tmp), CALL_LEN=attr(tmp, 'match.length'))
 		rp		<- subset(rp, CALL_LEN>par['PRCALL.mxgpinref'])
 		rp		<- rp[, CALL_LAST:=CALL_POS+CALL_LEN-1L]
@@ -156,19 +160,24 @@ haircut.get.call.for.PNG_ID<- function(indir.st, indir.al, png_id, files, alfile
 		}		
 	}	
 	#	get contig table
-	tmp		<- rownames(cr)[grepl(png_id,rownames(cr))]						
-	tx		<- data.table(		TAXON=tmp, 
-								BLASTnCUT= factor(grepl('cut',tmp), levels=c(TRUE,FALSE),labels=c('Y','N')), 
-								FIRST= apply( as.character(cr[tmp,,drop=FALSE]), 1, function(x) which(x!='-')[1] ),
-								LAST= ncol(cr)-apply( as.character(cr[tmp,,drop=FALSE]), 1, function(x) which(rev(x)!='-')[1] ) + 1L
-								)	
+	tx		<- subset( merge(data.table(TAXON=rownames(cr)), crn, by='TAXON', all.x=1), is.na(CONTIG), TAXON )
+	tx[, BLASTnCUT:= factor(grepl('cut',TAXON), levels=c(TRUE,FALSE),labels=c('Y','N'))]
+	tx[, FIRST:= apply( as.character(cr[TAXON,,drop=FALSE]), 1, function(x) which(x!='-')[1] )]
+	tx[, LAST:= ncol(cr)-apply( as.character(cr[TAXON,,drop=FALSE]), 1, function(x) which(rev(x)!='-')[1] ) + 1L]
 	tx		<- subset(tx, !is.na(FIRST) & !is.na(LAST))	#some contigs may just be in LTR
-	tx[, CNTG:=tx[, gsub('_cut','',gsub(paste(png_id,'.',sep=''),'',substring(TAXON, regexpr(png_id, TAXON))))]]
-	tx[, OCNTG:= tx[, sapply(strsplit(CNTG,'.',fixed=T),'[[',1)]]
-	tx[, CCNTG:= NA_character_]		
-	tmp		<- tx[, which(grepl('.',CNTG,fixed=T))]
-	if(length(tmp))
-		set(tx, tmp, 'CCNTG', tx[tmp, sapply(strsplit(CNTG,'.',fixed=T),'[[',2)])	
+	#	find common substring between TAXA names and png_id
+	tmp		<- tx[, {
+				tmp		<- as.vector(sapply(seq_along(TAXON), function(i)	LCS(substring(TAXON[i], seq(1, nchar(TAXON[i])), seq(1, nchar(TAXON[i]))), substring(png_id[i], seq(1, nchar(png_id[i])), seq(1, nchar(png_id[i]))))$vb	))
+				tmp		<- tmp[ tmp==seq_along(tmp) ]
+				list(PNG_KEY=substring(png_id, tmp[1], tail(tmp,1)))				
+			}, by='TAXON']
+	png_key	<- Reduce(intersect, as.list(tmp[, PNG_KEY]))
+	cat('\nFound common substring between TAXON names and PNG_ID=', png_key)
+	tx[, CNTG:=tx[, gsub('^\\.','',gsub('_cut','',gsub(png_key,'',substring(TAXON, regexpr(png_key, TAXON)))))]]
+	tx[, OCNTG:= tx[, sapply(strsplit(CNTG,'.',fixed=T),'[[', par['CNF.contig.idx'])]]	
+	tx[, OCNTG:= tx[, sapply(strsplit(CNTG,'.',fixed=T),	function(x)  paste(x[1:par['CNF.contig.idx']],collapse='.') )]]
+	tx[, CCNTG:= gsub('^\\.','',gsub(OCNTG, '', CNTG, fixed=1))]
+	set(tx, tx[, which(nchar(CCNTG)==0)], 'CCNTG', NA_character_)
 	tmp		<- subset(tx, BLASTnCUT=='Y' & !is.na(CCNTG))[, list(CCNTGn=length(CCNTG)), by='OCNTG']
 	tmp		<- subset(tmp, CCNTGn==1)[, OCNTG]	#check for cut contigs that should be present in multiple cuts by naming scheme, but after LTR removal there is only one cut
 	if(length(tmp))
@@ -386,7 +395,7 @@ haircut.get.call.for.PNG_ID<- function(indir.st, indir.al, png_id, files, alfile
 	#	select cut and raw contigs with a call, then set all characters with CALL==0 to -
 	cr			<- as.character(cr)
 	tmp			<- subset(cnsc.df, CALL==1 )[, unique(TAXON)]
-	tmp2		<- rownames(cr)[ !grepl(png_id,rownames(cr)) | rownames(cr)%in%tmp ] 
+	tmp2		<- c( crn[, TAXON], rownames(cr)[ rownames(cr)%in%tmp ] ) 
 	cr			<- cr[tmp2,]
 	for(tx in tmp)
 		cr[tx, subset(cnsc.df, TAXON==tx & CALL==0 & SITE<=ncol(cr))[, SITE]]	<- '-'
