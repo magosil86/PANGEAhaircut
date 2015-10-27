@@ -3,8 +3,8 @@
 \alias{cmd.haircut.pipeline}
 \title{Command line generator to run the Haircut pipeline}
 \usage{
-cmd.haircut.pipeline(indir.cut, indir.raw, outdir, batch.n = NA,
-  batch.id = NA)
+cmd.haircut.pipeline(in.raw, in.cut = NA, out = paste(in.raw, "_nohair", sep
+  = ""), batch.n = NA, batch.id = NA)
 }
 \description{
 The haircut pipeline involves two steps.
@@ -19,13 +19,34 @@ If cut/raw contigs correspond to each other, only one of both is returned.
 #
 #	run from command line 
 #	this produces a command line string that can be run in UNIX alikes
+#	only one raw IVA infile specified
 #
 \dontrun{
-	
+	 
+in.raw	<- '/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_151026_unaligned_raw/78268.assembly_contigs_hit_ref_hiv.fasta'		
+cat(cmd.haircut.pipeline(in.raw))
+}
+#
+#	cut versions of IVA infile are also available and out file is also specified
+#
+\dontrun{
+
+in.raw	<- '/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_151026_unaligned_cut/78270.assembly_contigs_hit_ref_hiv.fasta'
+in.cut	<- '/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/contigs_151026_unaligned_cut/78270.assembly_contigs_hit_ref_hiv_cut.fasta'
+out		<- '/Users/Oliver/Dropbox (Infectious Disease)/OR_Work/2015/2015_PANGEA_haircut/78270_nohair.fasta'		
+cat(cmd.haircut.pipeline(in.raw, in.cut, out))
+}
+#
+#	run from command line 
+#	this produces a command line string that can be run in UNIX alikes
+#	directories with raw IVA files and cut versions specified
+#
+\dontrun{
+	 
 indir.cut	<- paste(DATA, 'contigs_150408_unaligned_cut', sep='/' )
 indir.raw	<- paste(DATA, 'contigs_150408_unaligned_raw', sep='/' )
 outdir		<- paste(DATA, 'contigs_150408_model150816a', sep='/' )		
-cat(cmd.haircut.pipeline(indir.cut, indir.raw, outdir, batch.n=200, batch.id=1))
+cat(cmd.haircut.pipeline(indir.raw, indir.cut, outdir, batch.n=200, batch.id=1))
 }
 #
 #	create multiple runs on HPC using the command line version
@@ -43,7 +64,7 @@ tmp			<- tmp[, max(BATCH)]
 for(batch.id in seq.int(1,tmp))
 {	
 	
-	cmd			<- cmd.haircut.pipeline(indir.cut, indir.raw, outdir, batch.n=batch.n, batch.id=batch.id)
+	cmd			<- cmd.haircut.pipeline(indir.raw, indir.cut, outdir, batch.n=batch.n, batch.id=batch.id)
 	cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=4, hpc.mem="5000mb")
 	cat(cmd)		
 	#cmd.hpccaller(paste(DATA,"tmp",sep='/'), paste("hrct",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)	

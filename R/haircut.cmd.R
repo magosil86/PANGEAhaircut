@@ -202,7 +202,7 @@ cmd.haircut.call<- function(indir.st, indir.al, outdir, mfile=NA, trainfile=NA, 
 ##--------------------------------------------------------------------------------------------------------
 ##	command line generator to run 'haircut.cutstat.contigs.Rscript' and 'haircut.call.contigs.Rscript' one after each other
 ##--------------------------------------------------------------------------------------------------------
-cmd.haircut.pipeline.dir<- function(indir.cut, indir.raw, outdir, batch.n=NA, batch.id=NA)
+cmd.haircut.pipeline.dir<- function(indir.raw, indir.cut, outdir, batch.n=NA, batch.id=NA)
 {
 	#create temporary directories
 	aldir		<- paste('algnd_',format(Sys.time(),"%y-%m-%d-%H-%M-%S"),sep='')
@@ -244,27 +244,32 @@ cmd.haircut.pipeline.dir<- function(indir.cut, indir.raw, outdir, batch.n=NA, ba
 #' The underlying statistical model is pre-computed and supplied with the R package.
 #' Based on the call probabilites, 10bp chunks of each contig are called (yes=1, no=0). 
 #' If cut/raw contigs correspond to each other, only one of both is returned.
-#' 	 
+#'
+#' @example example/ex.cmd.haircut.pipeline_file.R 	 
 #' @example example/ex.cmd.haircut.pipeline.R
 #' @export
-cmd.haircut.pipeline<- function(in.cut, in.raw, out, batch.n=NA, batch.id=NA)
+cmd.haircut.pipeline<- function(in.raw, in.cut=NA, out=paste(in.raw,'_nohair',sep=''), batch.n=NA, batch.id=NA)
 {
-	tmp			<- c( file.info(in.cut)['isdir'], file.info(in.raw)['isdir'], file.info(in.raw)['isdir'])
-	stopifnot( tmp[1]==tmp[2] & tmp[1]==tmp[3])	#either all are files or all are directories	
+	tmp			<- c( file.info(in.raw)['isdir'], file.info(out)['isdir'])
+	stopifnot( tmp[1]==tmp[2])		#either all are files or all are directories
+	if(tmp[1])
+		stopifnot(!is.na(in.cut))	#if in.raw is dir, then in.cut must be specified
+	if(!is.na(in.cut))
+		stopifnot( tmp[1]==tmp[2] & tmp[1]==file.info(in.cut)['isdir'])	#either all are files or all are directories
 	cmd			<- "#######################################################
 #
 # start: run haircut.pipeline
 #
 #######################################################"
 	if(tmp[1]==TRUE)
-		cmd	<- paste(cmd, cmd.haircut.pipeline.dir(in.cut, in.raw, out, batch.n=batch.n, batch.id=batch.id), sep='\n')
+		cmd	<- paste(cmd, cmd.haircut.pipeline.dir(in.raw, in.cut, out, batch.n=batch.n, batch.id=batch.id), sep='\n')
 	if(tmp[1]==FALSE)
 	{
 		#	create temporary directories
 		indir.cut	<- paste('inc_',format(Sys.time(),"%y-%m-%d-%H-%M-%S"),sep='')
 		indir.raw	<- paste('inr_',format(Sys.time(),"%y-%m-%d-%H-%M-%S"),sep='')
 		outdir		<- paste('outd_',format(Sys.time(),"%y-%m-%d-%H-%M-%S"),sep='')
-		cmd			<- "CWD=$(pwd)\n"
+		cmd			<- paste(cmd,"\nCWD=$(pwd)\n",sep='')
 		cmd			<- paste(cmd,'echo "$CWD"\n',sep='')
 		indir.cut	<- paste('"$CWD"/',indir.cut,sep='')
 		indir.raw	<- paste('"$CWD"/',indir.raw,sep='')
@@ -272,8 +277,18 @@ cmd.haircut.pipeline<- function(in.cut, in.raw, out, batch.n=NA, batch.id=NA)
 		cmd			<- paste(cmd,"mkdir -p ",indir.cut,'\n',sep='')
 		cmd			<- paste(cmd,"mkdir -p ",indir.raw,'\n',sep='')
 		cmd			<- paste(cmd,"mkdir -p ",outdir,'\n',sep='')
-		#	copy files to directory and go
-		
+		#	copy files to temp directory		
+		cmd			<- paste(cmd,"cp ",in.raw,' ',indir.raw,'/',basename(in.raw),'\n',sep='')
+		if(!is.na(in.cut))
+			cmd		<- paste(cmd,"cp ",in.cut,' ',indir.cut,'/',basename(in.cut),'\n',sep='')
+		#	call pipeline on temp directory
+		cmd			<- paste(cmd, cmd.haircut.pipeline.dir(indir.raw, indir.cut, outdir, batch.n=NA, batch.id=NA), sep='\n')
+		#	clean up
+		cmd		<- paste(cmd, 'mv ', outdir,'/*fasta',' ', out, '\n',sep='')
+		cmd		<- paste(cmd, 'mv ', outdir,'/*pdf',' ', paste(gsub('fasta$|fa$','',out),'pdf'), '\n',sep='')
+		cmd		<- paste(cmd, 'mv ', outdir,'/*R',' ', paste(gsub('fasta$|fa$','',out),'R'), '\n',sep='')
+		cmd		<- paste(cmd, 'mv ', paste(outdir,'model150816a_QUANTILESofPRCALLbyCONTIG.csv',sep='/'),' ',paste(gsub('fasta$|fa$','',out),'csv'), '\n',sep='')		
+		cmd		<- paste(cmd, "rm -r ",indir.cut," ",indir.raw," ",outdir,sep='')
 	}
 	cmd			<- paste(cmd, "\n#######################################################
 #
@@ -282,7 +297,6 @@ cmd.haircut.pipeline<- function(in.cut, in.raw, out, batch.n=NA, batch.id=NA)
 #######################################################\n",sep='')	
 	ans
 }
-
 ##--------------------------------------------------------------------------------------------------------
 ##	command line generator for 'haircut.check.alignment.Rscript'
 ##--------------------------------------------------------------------------------------------------------
