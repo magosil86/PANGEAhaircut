@@ -37,7 +37,7 @@ haircutwrap.get.call.for.PNG_ID<- function(indir.st,indir.al,outdir,ctrmc,predic
 				if(0)	#devel
 				{
 					PNG_ID<- png_id	<- '15099_1_49'
-					PNG_ID	<- png_id <- 'R10_101702'
+					PNG_ID	<- png_id <- 'R13_X84343'
 					files	<- subset(infiles, PNG_ID==png_id)[, INFILE]
 					alfiles	<- subset(infiles, PNG_ID==png_id)[, ALFILE]								
 					tmp		<- haircut.get.call.for.PNG_ID(indir.st, indir.al, png_id, files, alfiles, par, ctrmc, predict.fun, crn)
@@ -49,7 +49,7 @@ haircutwrap.get.call.for.PNG_ID<- function(indir.st,indir.al,outdir,ctrmc,predic
 				cnsc.df	<- tmp$cnsc.df	
 				conf	<- tmp$conf
 				#	handle output
-				if(length(setdiff(rownames(cr), crn[,TAXON]))>1)
+				if(length(setdiff(rownames(cr), crn[,TAXON]))>0)
 				{
 					tmp		<- paste(outdir,'/',PNG_ID,'_wref_nohair.fasta',sep='')
 					cat('\nWrite to file', tmp)
