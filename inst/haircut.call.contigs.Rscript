@@ -51,7 +51,7 @@ if(length(args))
 	tmp<- na.omit(sapply(args,function(arg)
 					{	switch(substr(arg,2,15),
 								CNF.contig.idx= return(as.numeric(substr(arg,17,nchar(arg)))),NA)	}))
-	if(length(tmp)>0) CNF.contig.idx<- tmp[1]	
+	if(length(tmp)>0) CNF.contig.idx<- unname(tmp[1])	
 }
 if( is.na(indir.st) || is.na(indir.al) || is.na(outdir))
 {
@@ -109,5 +109,4 @@ par		<- c(	'CNF.contig.idx'= CNF.contig.idx,
 				'FRQx.quantile'=NA, 'FRQx.thr'=NA, 'CNS_FRQ.window'=200, 'CNS_AGR.window'=200, 'GPS.window'=200, 
 				'PRCALL.thrmax'=0.8, 'PRCALL.thrstd'=10, 'PRCALL.cutprdcthair'=150, 'PRCALL.cutprdctcntg'=50, 'PRCALL.cutrawgrace'=100, 'PRCALL.rmintrnlgpsblw'=100 ,'PRCALL.rmintrnlgpsend'=9700,
 				'PRCALL.mxgpinref'=100)
-print(par)		
 haircutwrap.get.call.for.PNG_ID(indir.st,indir.al,outdir,ctrmc,predict.fun,par,ctrain=ctrain, batch.n=batch.n, batch.id=batch.id)
