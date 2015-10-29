@@ -75,7 +75,7 @@ outdir		<- gsub("^\\s+|\\s+$", "", gsub('\\','',outdir,fixed=1))
 
 if(verbose)
 {
-	cat('\ninput args\n',paste(mfile, trainfile, indir.st, indir.al, outdir, batch.n, batch.id, sep='\n'))
+	cat('\ninput args\n',paste(mfile, trainfile, indir.st, indir.al, outdir, batch.n, batch.id, CNF.contig.idx, sep='\n'))
 }	
 ###############################################################################
 #	helper functions for debugging

@@ -54,7 +54,7 @@ haircutwrap.get.call.for.PNG_ID<- function(indir.st,indir.al,outdir,ctrmc,predic
 					#PNG_ID<- png_id	<- '15034_1_75'
 					#PNG_ID<- png_id	<- '14944_1_17'
 					#PNG_ID<- png_id	<- '15173_1_56'
-					PNG_ID	<- png_id <- 'TASP100561-A.assembly_contigs_hit_ref'
+					PNG_ID	<- png_id <- 'R10_100889'
 					files	<- subset(infiles, PNG_ID==png_id)[, INFILE]
 					alfiles	<- subset(infiles, PNG_ID==png_id)[, ALFILE]								
 					tmp		<- haircut.get.call.for.PNG_ID(indir.st, indir.al, png_id, files, alfiles, par, ctrmc, predict.fun, crn)
@@ -168,8 +168,8 @@ haircut.get.call.for.PNG_ID<- function(indir.st, indir.al, png_id, files, alfile
 	tx		<- subset(tx, !is.na(FIRST) & !is.na(LAST))	#some contigs may just be in LTR
 	#	find common substring between TAXA names and png_id
 	tmp		<- tx[, {
-				tmp		<- as.vector(sapply(seq_along(TAXON), function(i)	LCS(substring(TAXON[i], seq(1, nchar(TAXON[i])), seq(1, nchar(TAXON[i]))), substring(png_id[i], seq(1, nchar(png_id[i])), seq(1, nchar(png_id[i]))))$vb	))
-				tmp		<- tmp[ tmp==seq_along(tmp) ]
+				tmp		<- LCS( strsplit(TAXON, '')[[1]], strsplit(png_id, '')[[1]] )$vb
+				tmp		<- tmp[ tmp==(tmp[1]-1+seq_along(tmp)) ]
 				list(PNG_KEY=substring(png_id, tmp[1], tail(tmp,1)))				
 			}, by='TAXON']
 	png_key	<- Reduce(intersect, as.list(tmp[, PNG_KEY]))

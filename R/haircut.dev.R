@@ -262,15 +262,15 @@ dev.haircut<- function()
 	}
 	if(1)
 	{
-		indir.st	<- paste(DATA,'contigs_150408_wref_cutstat',sep='/')
-		indir.al	<- paste(DATA,'contigs_150408_wref',sep='/')
-		outdir		<- paste(DATA,'contigs_150408_model150816a',sep='/')
-		indir.st	<- paste(DATA,'contigs_151026_wref_cutstat',sep='/')
-		indir.al	<- paste(DATA,'contigs_151026_wref',sep='/')
-		outdir		<- paste(DATA,'contigs_151026_model150816b',sep='/')
-		
-		argv		<<- cmd.haircut.call(indir.st, indir.al, outdir)
-		argv		<<- paste('-',unlist(strsplit(argv,' -|\n')),sep='')
+		indir.st		<- paste(DATA,'contigs_150408_wref_cutstat',sep='/')
+		indir.al		<- paste(DATA,'contigs_150408_wref',sep='/')
+		outdir			<- paste(DATA,'contigs_150408_model150816a',sep='/')
+		indir.st		<- paste(DATA,'contigs_151026_wref_cutstat',sep='/')
+		indir.al		<- paste(DATA,'contigs_151026_wref',sep='/')
+		outdir			<- paste(DATA,'contigs_151026_model150816b',sep='/')
+		CNF.contig.idx	<- 2
+		argv			<<- cmd.haircut.call(indir.st, indir.al, outdir, CNF.contig.idx=CNF.contig.idx)
+		argv			<<- paste('-',unlist(strsplit(argv,' -|\n')),sep='')
 		
 	}
 	if(0)
@@ -759,7 +759,7 @@ pipeline.various<- function()
 			cmd.hpccaller(DATA, outfile, cmd)	
 		}
 	}
-	if(1)
+	if(0)
 	{
 		indir		<- paste(DATA, 'contigs_150408_wref', sep='/' )
 		outdir		<- paste(DATA, 'contigs_150408_wref_cutstat', sep='/' )
@@ -768,7 +768,7 @@ pipeline.various<- function()
 		indir		<- paste(DATA, 'contigs_151026_wref', sep='/' )
 		outdir		<- paste(DATA, 'contigs_151026_wref_cutstat', sep='/' )		
 		
-		batch.n		<- 200
+		batch.n		<- 100
 		tmp			<- data.table(FILE=list.files(indir, pattern='wRefs\\.fasta$', recursive=T))
 		tmp[, BATCH:= ceiling(seq_len(nrow(tmp))/batch.n)]
 		tmp			<- tmp[, max(BATCH)]
@@ -780,27 +780,31 @@ pipeline.various<- function()
 			cmd.hpccaller(DATA, paste("hrct",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)	
 		}	
 	}
-	if(0)
+	if(1)
 	{
-		indir.st	<- paste(DATA,'contigs_150408_wref_cutstat',sep='/')
-		indir.al	<- paste(DATA,'contigs_150408_wref',sep='/')
-		outdir		<- paste(DATA,'contigs_150408_model150816a',sep='/')
-		trainfile	<- paste(DATA,'contigs_150408_trainingset_subsets.R',sep='/')
-		indir.st	<- paste(DATA,'contigs_150902_wref_cutstat',sep='/')
-		indir.al	<- paste(DATA,'contigs_150902_wref',sep='/')
-		outdir		<- paste(DATA,'contigs_150902_model150816b',sep='/')
-		trainfile	<- NA
-		batch.n		<- 200
+		indir.st		<- paste(DATA,'contigs_150408_wref_cutstat',sep='/')
+		indir.al		<- paste(DATA,'contigs_150408_wref',sep='/')
+		outdir			<- paste(DATA,'contigs_150408_model150816a',sep='/')
+		trainfile		<- paste(DATA,'contigs_150408_trainingset_subsets.R',sep='/')
+		indir.st		<- paste(DATA,'contigs_150902_wref_cutstat',sep='/')
+		indir.al		<- paste(DATA,'contigs_150902_wref',sep='/')
+		outdir			<- paste(DATA,'contigs_150902_model150816b',sep='/')
+		indir.st		<- paste(DATA,'contigs_151026_wref_cutstat',sep='/')
+		indir.al		<- paste(DATA,'contigs_151026_wref',sep='/')
+		outdir			<- paste(DATA,'contigs_151026_model150816b',sep='/')		
+		trainfile		<- NA
+		CNF.contig.idx	<- 2		
+		batch.n			<- 50
 		
 		tmp			<- data.table(INFILE=list.files(indir.al, pattern='wRefs\\.fasta$', recursive=T))
 		tmp[, BATCH:= ceiling(seq_len(nrow(tmp))/batch.n)]
 		tmp			<- tmp[, max(BATCH)]
 		for(batch.id in seq.int(1,tmp))
 		{			
-			cmd			<- cmd.haircut.call(indir.st, indir.al, outdir, trainfile=trainfile, batch.n=batch.n, batch.id=batch.id)
+			cmd			<- cmd.haircut.call(indir.st, indir.al, outdir, trainfile=trainfile, batch.n=batch.n, batch.id=batch.id, CNF.contig.idx=CNF.contig.idx)
 			cmd			<- cmd.hpcwrapper(cmd, hpc.nproc= 1, hpc.q='pqeelab', hpc.walltime=4, hpc.mem="5000mb")
 			cat(cmd)		
-			cmd.hpccaller(paste(DATA,"tmp",sep='/'), paste("hrct",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)	
+			cmd.hpccaller(DATA, paste("hrct",paste(strsplit(date(),split=' ')[[1]],collapse='_',sep=''),sep='.'), cmd)	
 		}	
 	}
 	if(0)
