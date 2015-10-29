@@ -734,7 +734,7 @@ pipeline.various<- function()
 			cmd.hpccaller(paste(DATA,"tmp",sep='/'), outfile, cmd)	
 		}
 	}
-	if(1)
+	if(0)
 	{		
 		indir.cut	<- paste(DATA, 'contigs_150408_unaligned_cut', sep='/' )
 		indir.raw	<- paste(DATA, 'contigs_150408_unaligned_raw', sep='/' )
@@ -759,7 +759,7 @@ pipeline.various<- function()
 			cmd.hpccaller(DATA, outfile, cmd)	
 		}
 	}
-	if(0)
+	if(1)
 	{
 		indir		<- paste(DATA, 'contigs_150408_wref', sep='/' )
 		outdir		<- paste(DATA, 'contigs_150408_wref_cutstat', sep='/' )
