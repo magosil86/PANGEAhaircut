@@ -42,7 +42,11 @@ library(help=PANGEAhaircut)
 
 * Function `haircutwrap.get.call.for.PNG_ID` to call 10 bp long chunks of cut/raw contigs, based on descriptive statistics of the contigs and the consensus sequence. This function can be called from within R, from the command line, and on an HPC system. See `?haircutwrap.get.call.for.PNG_ID` for help.
 
-* Function `cmd.haircut.pipeline` that combines the above steps. This produces a UNIX bash script that can be submitted to an HPC system. E.g. typing in R:
+* Function `cmd.haircut.pipeline` that combines the above steps. This produces a UNIX bash script that can be submitted to an HPC system. There are several options to invoke the pipeline, see `?cmd.haircut.pipeline` for help. One popular option is to invoke the pipeline on a single IVA contig from the command line:
+```
+Rscript haircut.pipeline.Rscript -in.raw=path/raw_contigs.fasta  -in.cut=path/cut_contigs.fasta -out=path/output.fasta -CNF.contig.idx=1
+```
+where `haircut.pipeline.Rscript` is found in the R package installation directory and `-in.raw` must be specified at a minimum. Another popular option is to type in R:
 
 ```
 #DATA		<- SET THIS DIRECTORY
@@ -52,7 +56,7 @@ outdir		<- paste(DATA, 'contigs_150408_model150816a', sep='/' )
 cat(cmd.haircut.pipeline(indir.cut, indir.raw, outdir, batch.n=200, batch.id=1))
 ```
 
-produces:
+This produces:
 
 
 ```
