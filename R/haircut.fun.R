@@ -37,24 +37,7 @@ haircutwrap.get.call.for.PNG_ID<- function(indir.st,indir.al,outdir,ctrmc,predic
 				if(0)	#devel
 				{
 					PNG_ID<- png_id	<- '15099_1_49'
-					#PNG_ID<- png_id	<- '12559_1_11'
-					#PNG_ID<- png_id	<- '14728_1_84'
-					#PNG_ID<- png_id	<- '14938_1_10'
-					#PNG_ID<- png_id	<- '14728_1_82'
-					#PNG_ID<- png_id	<- '12559_1_24'
-					#PNG_ID<- png_id	<- '12559_1_81'
-					#PNG_ID<- png_id	<- '12559_1_87'
-					#PNG_ID<- png_id	<- '12559_1_13'
-					#PNG_ID<- png_id	<- '13549_1_74'
-					#PNG_ID<- png_id	<- '13554_1_12'
-					#PNG_ID<- png_id	<- '13554_1_14'
-					#PNG_ID<- png_id	<- '13554_1_27'
-					#PNG_ID<- png_id	<- '13554_1_33'
-					#PNG_ID<- png_id	<- '14760_1_1'
-					#PNG_ID<- png_id	<- '15034_1_75'
-					#PNG_ID<- png_id	<- '14944_1_17'
-					#PNG_ID<- png_id	<- '15173_1_56'
-					PNG_ID	<- png_id <- 'R10_100889'
+					PNG_ID	<- png_id <- 'R10_101702'
 					files	<- subset(infiles, PNG_ID==png_id)[, INFILE]
 					alfiles	<- subset(infiles, PNG_ID==png_id)[, ALFILE]								
 					tmp		<- haircut.get.call.for.PNG_ID(indir.st, indir.al, png_id, files, alfiles, par, ctrmc, predict.fun, crn)
@@ -167,11 +150,14 @@ haircut.get.call.for.PNG_ID<- function(indir.st, indir.al, png_id, files, alfile
 	tx[, LAST:= ncol(cr)-apply( as.character(cr[TAXON,,drop=FALSE]), 1, function(x) which(rev(x)!='-')[1] ) + 1L]
 	tx		<- subset(tx, !is.na(FIRST) & !is.na(LAST))	#some contigs may just be in LTR
 	#	find common substring between TAXA names and png_id
-	tmp		<- tx[, {
-				tmp		<- LCS( strsplit(TAXON, '')[[1]], strsplit(png_id, '')[[1]] )$vb
-				tmp		<- tmp[ tmp==(tmp[1]-1+seq_along(tmp)) ]
-				list(PNG_KEY=substring(png_id, tmp[1], tail(tmp,1)))				
-			}, by='TAXON']
+	tmp		<- unlist(sapply(seq_len(nchar(png_id)), function(i)	sapply(seq.int(i,nchar(png_id)), function(j)	substr(png_id, i, j)	)))	
+	tmp		<- tx[, {	
+						#tmp		<- LCS( strsplit(TAXON, '')[[1]], strsplit(png_id, '')[[1]] )$vb
+						#tmp		<- tmp[ tmp==(tmp[1]-1+seq_along(tmp)) ]				
+						#list(PNG_KEY=substring(png_id, tmp[1], tail(tmp,1)))
+						z		<- tmp[ sapply(tmp, function(x) grepl(x, TAXON)) ]						
+						list(PNG_KEY=z[ which.max( nchar(z) ) ])														
+					}, by='TAXON']
 	png_key	<- Reduce(intersect, as.list(tmp[, PNG_KEY]))
 	cat('\nFound common substring between TAXON names and PNG_ID=', png_key)
 	tx[, CNTG:=tx[, gsub('^\\.','',gsub('_cut','',gsub(png_key,'',substring(TAXON, regexpr(png_key, TAXON)))))]]		
