@@ -26,7 +26,10 @@ haircutwrap.get.call.for.PNG_ID<- function(indir.st,indir.al,outdir,ctrmc,predic
 		infiles		<- subset(infiles, BATCH==batch.id)
 	}
 	#	get reference file names
-	crn			<- data.table(TAXON=rownames(read.dna(system.file(package="PANGEAhaircut", "HIV1_COM_2012_genome_DNA_NoLTR.fasta"), format='fasta')), CONTIG=0L)	
+	crn			<- data.table(TAXON=rownames(read.dna(system.file(package="PANGEAhaircut", "HIV1_COM_2012_genome_DNA_NoLTR.fasta"), format='fasta')), CONTIG=0L)
+	
+	print(par)
+	
 	#	predict by PANGEA_ID
 	cnsc.info	<-  infiles[,
 			{
@@ -125,6 +128,7 @@ haircutwrap.get.call.for.PNG_ID<- function(indir.st,indir.al,outdir,ctrmc,predic
 haircut.get.call.for.PNG_ID<- function(indir.st, indir.al, png_id, files, alfiles, par, ctrmc, predict.fun, crn)	
 {
 	require(qualV)
+	print(par)
 	conf	<- 1
 	#	load covariates
 	stopifnot(length(files)==1, length(alfiles)==1)
